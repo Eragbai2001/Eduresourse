@@ -11,7 +11,7 @@ import {
   Users,
   GraduationCap,
   DollarSign,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,7 +27,7 @@ export default function SmallScreenHeader({
 
   return (
     <>
-      <header className="h-16 bg-white px-6 flex items-center justify-between max-lg:flex lg:hidden border-b border-gray-100">
+      <header className="h-16 bg-white px-6 flex items-center justify-between max-md:flex md:hidden border-b border-gray-100">
         {/* Left section - Logo matching sidebar */}
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 overflow-hidden">
@@ -48,8 +48,8 @@ export default function SmallScreenHeader({
           </h1>
         </div>
 
-        {/* Right section - Animated Hamburger menu (hidden at lg screens and above) */}
-        <div className="flex items-center max-lg:flex lg:hidden">
+        {/* Right section - Animated Hamburger menu (hidden at md screens and above) */}
+        <div className="flex items-center max-md:flex md:hidden">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="relative w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
@@ -76,7 +76,7 @@ export default function SmallScreenHeader({
       </header>
 
       <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ease-in-out max-lg:block lg:hidden ${
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ease-in-out max-md:block md:hidden ${
           isMenuOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -110,21 +110,41 @@ export default function SmallScreenHeader({
           <nav className="px-6 py-4">
             <div className="space-y-2">
               {[
-                { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-                { href: "/dashboard/messages", label: "Messages", icon: <MessageSquare size={18} /> },
-                { href: "/dashboard/calendar", label: "Calendar", icon: <Calendar size={18} /> },
+                {
+                  href: "/dashboard",
+                  label: "Dashboard",
+                  icon: <LayoutDashboard size={18} />,
+                },
+                {
+                  href: "/dashboard/messages",
+                  label: "Messages",
+                  icon: <MessageSquare size={18} />,
+                },
+                {
+                  href: "/dashboard/calendar",
+                  label: "Calendar",
+                  icon: <Calendar size={18} />,
+                },
                 {
                   href: "/dashboard/enrollments",
                   label: "Enrollments",
                   icon: <FileText size={18} />,
                 },
-                { href: "/dashboard/courses", label: "Courses", icon: <Bookmark size={18} /> },
+                {
+                  href: "/dashboard/courses",
+                  label: "Courses",
+                  icon: <Bookmark size={18} />,
+                },
                 {
                   href: "/dashboard/instructors",
                   label: "Instructors",
                   icon: <Users size={18} />,
                 },
-                { href: "/dashboard/students", label: "Students", icon: <GraduationCap size={18} /> },
+                {
+                  href: "/dashboard/students",
+                  label: "Students",
+                  icon: <GraduationCap size={18} />,
+                },
                 {
                   href: "/dashboard/financials",
                   label: "Financials",

@@ -17,7 +17,7 @@ export default function Header({
   pageColor = "text-gray-500", // Default color for current page
 }: HeaderProps) {
   return (
-    <header className="h-16 border-gray-200 bg-[#F5F8FF] px-6 items-center max-lg:hidden lg:flex">
+    <header className="h-16 border-gray-200 bg-[#F5F8FF] px-6 items-center max-md:hidden md:flex">
       {/* Left section containing title, welcome message and search bar */}
       <div className="flex-1 flex items-center justify-between ">
         {/* Title and subtitle */}
@@ -50,7 +50,7 @@ export default function Header({
       </div>
 
       {/* Right section containing profile, notifications and settings */}
-      <div className="flex items-center justify-center bg-[#F5F8FF]  px-4 py-2 rounded-lg space-x-2">
+      <div className="flex items-center justify-center bg-[#F5F8FF] pl-3.5   py-2 rounded-lg space-x-2">
         {/* Profile */}
         <div className="flex items-center">
           <div className="relative w-[40px] h-[40px] rounded-lg overflow-hidden bg-purple-100">
@@ -70,7 +70,7 @@ export default function Header({
 
         <div className="flex items-center space-x-2">
           {/* Notifications */}
-          <div className="bg-[#F5F5F7] rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
+          <div className="bg-white rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
             <button className="relative ">
               <Bell className="h-5 w-5 text-gray-500" />
               <span className="absolute top-0 right-0 w-2 h-2 bg-[#F588D6] rounded-full"></span>
@@ -78,7 +78,7 @@ export default function Header({
           </div>
 
           {/* Settings */}
-          <div className="bg-[#F5F5F7] rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
+          <div className="bg-white rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
             <button className=" ">
               <Settings className="h-5 w-5 text-gray-500" />
             </button>

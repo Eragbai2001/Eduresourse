@@ -32,7 +32,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 py-2 rounded-xl transition-colors lg:w-[173px] h-[39px] lg:px-4 max-lg:justify-center max-lg:w-[50px] ${
+      className={`flex items-center gap-3 py-2 rounded-xl transition-colors lg:w-[173px] h-[39px] lg:px-4 md:max-lg:w-[40px] md:max-lg:mx-auto md:max-lg:justify-center ${
         isActive
           ? "bg-[#FFEEFA] text-[#2E3135]"
           : "hover:bg-gray-100 text-[#797B7E]"
@@ -50,10 +50,10 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-[221px] h-screen flex flex-col bg-white border-gray-200">
+    <aside className="lg:w-[221px] md:max-lg:w-[60px] h-screen flex flex-col bg-white border-gray-200">
       {/* Logo area with actual image */}
-      <div className="flex items-center gap-2 py-5 max-lg:justify-center lg:px-4">
-        <div className="relative w-8 h-8  overflow-hidden">
+      <div className="flex items-center gap-2 py-5 max-lg:justify-center lg:px-4 md:max-lg:px-0">
+        <div className="relative w-8 h-8 overflow-hidden">
           <Image
             src="/logo.png"
             alt="Logo"
@@ -68,7 +68,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation links */}
-      <div className="flex-1 flex flex-col gap-1 lg:px-3 max-lg:items-center">
+      <div className="flex-1 flex flex-col gap-1 lg:px-3 md:max-lg:px-0 md:max-lg:items-center">
         <SidebarLink
           href="/dashboard"
           icon={<LayoutDashboard size={20} />}
@@ -119,7 +119,7 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* Upgrade card - centered with flex, hidden on tablet/small laptop screens */}
+      {/* Upgrade card - centered with flex, hidden on smaller screens and tablet */}
       <div className="flex justify-start max-lg:hidden">
         <div className="m-3 p-3 bg-[#FFD365] rounded-lg relative pt-12 w-[173px]">
           {/* Image positioned at top center, partially outside the div - using decimal values */}
@@ -149,8 +149,8 @@ export default function Sidebar() {
       </div>
 
       {/* Sign Out */}
-      <div className="lg:p-3 max-lg:flex max-lg:justify-center border-gray-200">
-        <button className="flex items-center gap-3 lg:px-4 py-2 text-[#797B7E] bg-[#F5F8FF] rounded-lg transition-colors cursor-pointer lg:w-[173px] h-[39px] max-lg:w-[50px] max-lg:justify-center">
+      <div className="lg:p-3 md:max-lg:py-3 md:max-lg:flex md:max-lg:justify-center border-gray-200">
+        <button className="flex items-center gap-3 lg:px-4 py-2 text-[#797B7E] bg-[#F5F8FF] rounded-lg transition-colors cursor-pointer lg:w-[173px] h-[39px] md:max-lg:w-[40px] md:max-lg:justify-center">
           <LogOut size={20} />
           <span className="text-[14px] font-medium font-hanken max-lg:hidden">
             Sign Out

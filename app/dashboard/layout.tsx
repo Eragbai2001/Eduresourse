@@ -77,14 +77,14 @@ export default function DashboardLayout({
   return (
     <div className="h-screen bg-[#F5F8FF]">
       <div className="flex h-full">
-        {/* Sidebar - visible only at lg screens and above */}
-        <div className="lg:block hidden">
+        {/* Sidebar - visible at md screens and above */}
+        <div className="md:block hidden">
           <Sidebar />
         </div>
 
         <div className="flex-1 flex flex-col">
           <div className=" mt-3">
-            {/* Original header (visible at lg and above) */}
+            {/* Original header (visible at md and above) */}
             <Header
               title={title}
               subtitle={subtitle}
@@ -92,7 +92,7 @@ export default function DashboardLayout({
               pageColor={pageColor}
             />
 
-            {/* Small screen header (visible at max-lg) */}
+            {/* Small screen header (visible at max-md) */}
             <SmallScreenHeader title={title} />
           </div>
           <main className="flex-1 p-6 bg-[#F5F8FF] overflow-auto">
