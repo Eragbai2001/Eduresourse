@@ -32,7 +32,7 @@ const courses = [
   {
     id: 1,
     title: "Introduction to Programming",
-    category: "Computer Science",
+    department: "Computer Science",
     level: "100 Level",
     status: "Active",
     lessons: 18,
@@ -63,7 +63,7 @@ const courses = [
   {
     id: 2,
     title: "Calculus and Analytical Geometry",
-    category: "Mathematics",
+    department: "Mathematics",
     level: "100 Level",
     status: "Active",
     lessons: 20,
@@ -94,7 +94,7 @@ const courses = [
   {
     id: 3,
     title: "Total Man Concept",
-    category: "General Studies",
+    department: "General Studies",
     level: "200 Level",
     status: "Active",
     lessons: 12,
@@ -125,7 +125,7 @@ const courses = [
   {
     id: 4,
     title: "Object-Oriented Programming with Java",
-    category: "Computer Science",
+    department: "Computer Science",
     level: "200 Level",
     status: "Draft",
     lessons: 25,
@@ -156,7 +156,7 @@ const courses = [
   {
     id: 5,
     title: "Entrepreneurial Development Studies",
-    category: "Business",
+    department: "Business",
     level: "300 Level",
     status: "Active",
     lessons: 15,
@@ -191,35 +191,65 @@ export default function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState(courses[2]); // Default to Business Analytics course
   const [activeTab, setActiveTab] = useState("All");
   const [activeLevel, setActiveLevel] = useState("100 Level"); // Default level filter
+  const [activeDepartment, setActiveDepartment] = useState("All Departments"); // Default department filter
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Filter courses based on active tab and level
+  // Ref for dropdown container
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Effect to handle click outside dropdown
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setMobileFiltersOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filter courses based on active tab, department, and level
   const filteredCourses = courses
     .filter((course) =>
       activeTab === "All" ? true : course.status === activeTab
     )
     .filter((course) =>
       activeLevel === "All Levels" ? true : course.level === activeLevel
+    )
+    .filter((course) =>
+      activeDepartment === "All Departments"
+        ? true
+        : course.department === activeDepartment
     );
 
   return (
     <div className="h-full w-full bg-[#F5F8FF] flex flex-col lg:flex-row lg:justify-between gap-4 font-hanken">
       {/* Left side - Courses list */}
-      <div className="bg-[#F5F8FF]   w-full mb-4 lg:mb-0 h-full ">
+      <div className="bg-[#F5F8FF]   w-full  mb-4 lg:mb-0 h-full ">
         {/* Simple tab filter */}
 
         <div className="flex items-center justify-between mb-6">
           {/* Tab filters */}
           <div className="bg-white rounded-xl flex h-10">
-            {["All", "Active", "Draft", "Archived"].map((tab) => (
+            {["All", "Recent", "Old"].map((tab) => (
               <button
                 key={tab}
                 className={`py-2 px-3 lg:px-4 rounded-xl text-sm font-medium ${
+                  (activeTab === "Active" && tab === "Recent") ||
+                  (activeTab === "Draft" && tab === "Old") ||
                   activeTab === tab
                     ? "bg-[#CDDEFF] text-[#2E3135]"
                     : "text-[#797B7E] hover:bg-white/50"
                 }`}
-                onClick={() => setActiveTab(tab)}>
+                onClick={() =>
+                  setActiveTab(
+                    tab === "Recent" ? "Active" : tab === "Old" ? "Draft" : tab
+                  )
+                }>
                 {tab}
               </button>
             ))}
@@ -238,23 +268,32 @@ export default function CoursesPage() {
 
             {/* Menu icon for mobile - replaced with dropdown */}
             <div className="block md:hidden">
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg"
+                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer"
                   onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}>
-                  <Image src="/file.svg" alt="Filter" width={24} height={24} />
+                  <Image
+                    src="/courses/filter.png"
+                    alt="Filter"
+                    width={24}
+                    height={24}
+                  />
                 </button>
 
                 {mobileFiltersOpen && (
                   <div className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3">
                     <CustomDropdown
                       options={[
-                        "All Category",
-                        "Business",
-                        "Design",
-                        "Marketing",
-                        "Development",
+                        "All Departments",
+                        "Computer Science",
+                        "Biochemistry",
+                        "Mathematics",
+                        "Physics",
+                        "Electrical Engineering",
+                        "General Studies",
                       ]}
+                      defaultOption={activeDepartment}
+                      onChange={setActiveDepartment}
                     />
                     <CustomDropdown
                       options={[
@@ -273,30 +312,49 @@ export default function CoursesPage() {
               </div>
             </div>
 
-            {/* Dropdown for desktop */}
+            {/* Dropdown for desktop - using mobile style */}
             <div className="hidden md:block">
-              <div className="flex items-center gap-3">
-                <CustomDropdown
-                  options={[
-                    "All Category",
-                    "Business",
-                    "Design",
-                    "Marketing",
-                    "Development",
-                  ]}
-                />
-                <CustomDropdown
-                  options={[
-                    "All Levels",
-                    "100 Level",
-                    "200 Level",
-                    "300 Level",
-                    "400 Level",
-                    "500 Level",
-                  ]}
-                  defaultOption={activeLevel}
-                  onChange={setActiveLevel}
-                />
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer"
+                  onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}>
+                  <Image
+                    src="/courses/filter.png"
+                    alt="Filter"
+                    width={24}
+                    height={24}
+                  />
+                </button>
+
+                {mobileFiltersOpen && (
+                  <div className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3">
+                    <CustomDropdown
+                      options={[
+                        "All Departments",
+                        "Computer Science",
+                        "Biochemistry",
+                        "Mathematics",
+                        "Physics",
+                        "Electrical Engineering",
+                        "General Studies",
+                      ]}
+                      defaultOption={activeDepartment}
+                      onChange={setActiveDepartment}
+                    />
+                    <CustomDropdown
+                      options={[
+                        "All Levels",
+                        "100 Level",
+                        "200 Level",
+                        "300 Level",
+                        "400 Level",
+                        "500 Level",
+                      ]}
+                      defaultOption={activeLevel}
+                      onChange={setActiveLevel}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -327,7 +385,7 @@ export default function CoursesPage() {
                 {/* Category and level ABOVE the title */}
                 <div className="flex text-sm items-center">
                   <span className="text-[#8D8F91] text-[12px]">
-                    {course.category}
+                    {course.department}
                   </span>
                   <span className="mx-2 text-gray-300">•</span>
                   <span
@@ -363,12 +421,12 @@ export default function CoursesPage() {
       </div>
 
       {/* Right side - Course description */}
-      <div className="bg-white rounded-xl   w-full lg:ml-auto h-[916px] p-4">
+      <div className="bg-white rounded-xl   w-full  lg:ml-auto h-fit p-4">
         {selectedCourse ? (
           <div>
             <div className="mb-4   ">
               <div className="text-[12px] text-[#8D8F91] flex items-center">
-                {selectedCourse.category}{" "}
+                {selectedCourse.department}{" "}
                 <span className="mx-2 text-gray-300 text-sm">•</span>
                 <span style={{ color: getLevelColor(selectedCourse.level) }}>
                   {selectedCourse.level}
@@ -399,18 +457,43 @@ export default function CoursesPage() {
                   {selectedCourse.status}
                 </span>
               </div>
-              <div className="flex items-center text-xs text-gray-500 mt-3 gap-3.5 ">
+              <div className="flex items-center text-xs text-gray-500 mt-3 gap-3.5">
+                {/* Rating and reviews */}
+                <span className="flex items-center mr-4">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="mr-1">
+                    <path
+                      d="M10 15.27L16.18 18l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 3.73L3.82 18z"
+                      fill="#F6C244"
+                    />
+                  </svg>
+                  <span className="font-semibold text-[#2E3135]">4.8</span>
+                  <span className="text-[#797B7E] font-normal ml-1">
+                    (1,250 Reviews)
+                  </span>
+                </span>
+
+                {/* Lessons count */}
                 <span className="flex items-center mr-3">
                   <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
-                  {selectedCourse.lessons} Lessons
+                  <span className="text-[#2E3135] font-semibold mr-1">{selectedCourse.lessons} </span> Lessons
                 </span>
+
+                {/* Hours count */}
                 <span className="flex items-center mr-3">
                   <Clock size={14} className="mr-1 text-gray-400" />{" "}
-                  {selectedCourse.hours} Hours
+                  <span className="text-[#2E3135] font-semibold mr-1">{selectedCourse.hours} </span> Hours
                 </span>
+
+                {/* Enrolled count */}
                 <span className="flex items-center">
                   <Users size={14} className="mr-1 text-gray-400" />{" "}
-                  {selectedCourse.enrolled} Enrolled
+                  <span className="text-[#2E3135] font-semibold mr-1">{selectedCourse.enrolled} </span> Enrolled
                 </span>
               </div>
             </div>
