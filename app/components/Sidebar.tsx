@@ -50,7 +50,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="lg:w-[221px] md:max-lg:w-[60px] h-screen flex flex-col bg-white border-gray-200">
+    <aside className="lg:w-[221px] md:max-lg:w-[60px] h-screen flex flex-col bg-white ">
       {/* Logo area with actual image */}
       <div className="flex items-center gap-2 py-5 max-lg:justify-center lg:px-4 md:max-lg:px-0">
         <div className="relative w-8 h-8 overflow-hidden">
@@ -67,8 +67,8 @@ export default function Sidebar() {
         </span>
       </div>
 
-      {/* Navigation links */}
-      <div className="flex-1 flex flex-col gap-1 lg:px-3 md:max-lg:px-0 md:max-lg:items-center">
+      {/* Navigation links - with overflow handling */}
+      <div className="flex-1 flex flex-col gap-1 lg:px-3 md:max-lg:px-0 md:max-lg:items-center overflow-y-auto">
         <SidebarLink
           href="/dashboard"
           icon={<LayoutDashboard size={20} />}

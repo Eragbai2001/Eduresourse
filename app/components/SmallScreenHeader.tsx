@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   LayoutDashboard,
@@ -25,9 +25,17 @@ export default function SmallScreenHeader({
 }: SmallScreenHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // No need to prevent scrolling without the overlay
+  useEffect(() => {
+    // Keep body scrolling even when menu is open
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
+
   return (
     <>
-      <header className="h-16 bg-white px-6 flex items-center justify-between max-md:flex md:hidden border-b border-gray-100">
+      <header className="fixed z-40 w-full h-16 bg-white px-6 flex items-center justify-between max-md:flex md:hidden border-b border-gray-100 top-0">
         {/* Left section - Logo matching sidebar */}
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 overflow-hidden">
@@ -42,7 +50,7 @@ export default function SmallScreenHeader({
         </div>
 
         {/* Center section - Page title */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
+        <div className="justify-center flex items-center">
           <h1 className="font-medium text-[#2E3135] text-[16px] font-hanken">
             {title}
           </h1>
@@ -78,14 +86,12 @@ export default function SmallScreenHeader({
       <div
         className={`fixed inset-0 z-50 transition-opacity duration-300 ease-in-out max-md:block md:hidden ${
           isMenuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+            ? "pointer-events-auto overflow-hidden"
+            : "pointer-events-none"
         }`}>
         {/* Backdrop */}
         <div
-          className={`absolute inset-0  transition-opacity duration-300 ease-in-out ${
-            isMenuOpen ? "bg-opacity-50" : "bg-opacity-0"
-          }`}
+          className={`absolute inset-0 transition-opacity duration-300 ease-in-out`}
           onClick={() => setIsMenuOpen(false)}
         />
 

@@ -32,7 +32,7 @@ const courses = [
   {
     id: 1,
     title: "Introduction to Programming",
-    category: "Computer Science",
+    department: "Computer Science",
     level: "100 Level",
     status: "Active",
     lessons: 18,
@@ -63,7 +63,7 @@ const courses = [
   {
     id: 2,
     title: "Calculus and Analytical Geometry",
-    category: "Mathematics",
+    department: "Mathematics",
     level: "100 Level",
     status: "Active",
     lessons: 20,
@@ -94,7 +94,7 @@ const courses = [
   {
     id: 3,
     title: "Total Man Concept",
-    category: "General Studies",
+    department: "General Studies",
     level: "200 Level",
     status: "Active",
     lessons: 12,
@@ -125,7 +125,7 @@ const courses = [
   {
     id: 4,
     title: "Object-Oriented Programming with Java",
-    category: "Computer Science",
+    department: "Computer Science",
     level: "200 Level",
     status: "Draft",
     lessons: 25,
@@ -156,7 +156,7 @@ const courses = [
   {
     id: 5,
     title: "Entrepreneurial Development Studies",
-    category: "Business",
+    department: "Business",
     level: "300 Level",
     status: "Active",
     lessons: 15,
@@ -191,35 +191,72 @@ export default function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState(courses[2]); // Default to Business Analytics course
   const [activeTab, setActiveTab] = useState("All");
   const [activeLevel, setActiveLevel] = useState("100 Level"); // Default level filter
+  const [activeDepartment, setActiveDepartment] = useState("All Departments"); // Default department filter
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Filter courses based on active tab and level
+  // Refs for dropdown containers
+  const mobileDropdownRef = React.useRef<HTMLDivElement>(null);
+  const desktopDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Effect to handle click outside dropdown
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // Check if click is outside both dropdowns
+      const clickedOutsideMobile =
+        mobileDropdownRef.current &&
+        !mobileDropdownRef.current.contains(event.target as Node);
+
+      const clickedOutsideDesktop =
+        desktopDropdownRef.current &&
+        !desktopDropdownRef.current.contains(event.target as Node);
+
+      if (clickedOutsideMobile && clickedOutsideDesktop) {
+        setMobileFiltersOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filter courses based on active tab, department, and level
   const filteredCourses = courses
     .filter((course) =>
       activeTab === "All" ? true : course.status === activeTab
     )
     .filter((course) =>
       activeLevel === "All Levels" ? true : course.level === activeLevel
+    )
+    .filter((course) =>
+      activeDepartment === "All Departments"
+        ? true
+        : course.department === activeDepartment
     );
 
   return (
     <div className="h-full w-full bg-[#F5F8FF] flex flex-col lg:flex-row lg:justify-between gap-4 font-hanken">
       {/* Left side - Courses list */}
-      <div className="bg-[#F5F8FF]   w-full mb-4 lg:mb-0 h-full ">
+      <div className="bg-[#F5F8FF]   w-full  mb-4 lg:mb-0 h-full ">
         {/* Simple tab filter */}
 
         <div className="flex items-center justify-between mb-6">
           {/* Tab filters */}
           <div className="bg-white rounded-xl flex h-10">
-            {["All", "Active", "Draft", "Archived"].map((tab) => (
+            {["All", "Recent", "Old"].map((tab) => (
               <button
                 key={tab}
                 className={`py-2 px-3 lg:px-4 rounded-xl text-sm font-medium ${
+                  (activeTab === "Active" && tab === "Recent") ||
+                  (activeTab === "Draft" && tab === "Old") ||
                   activeTab === tab
                     ? "bg-[#CDDEFF] text-[#2E3135]"
                     : "text-[#797B7E] hover:bg-white/50"
                 }`}
-                onClick={() => setActiveTab(tab)}>
+                onClick={() =>
+                  setActiveTab(
+                    tab === "Recent" ? "Active" : tab === "Old" ? "Draft" : tab
+                  )
+                }>
                 {tab}
               </button>
             ))}
@@ -235,26 +272,40 @@ export default function CoursesPage() {
                 <Search size={20} stroke="#2E3135" strokeWidth={1.5} />
               </button>
             </div>
-
             {/* Menu icon for mobile - replaced with dropdown */}
             <div className="block md:hidden">
-              <div className="relative">
+              <div className="relative" ref={mobileDropdownRef}>
                 <button
-                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg"
+                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer"
                   onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}>
-                  <Image src="/file.svg" alt="Filter" width={24} height={24} />
+                  <Image
+                    src="/courses/filter.png"
+                    alt="Filter"
+                    width={24}
+                    height={24}
+                  />
                 </button>
 
                 {mobileFiltersOpen && (
-                  <div className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3">
+                  <div
+                    className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3"
+                    onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
+                  >
                     <CustomDropdown
                       options={[
-                        "All Category",
-                        "Business",
-                        "Design",
-                        "Marketing",
-                        "Development",
+                        "All Departments",
+                        "Computer Science",
+                        "Biochemistry",
+                        "Mathematics",
+                        "Physics",
+                        "Electrical Engineering",
+                        "General Studies",
                       ]}
+                      defaultOption={activeDepartment}
+                      onChange={(value) => {
+                        setActiveDepartment(value);
+                        // Keep dropdown open after selection
+                      }}
                     />
                     <CustomDropdown
                       options={[
@@ -266,37 +317,67 @@ export default function CoursesPage() {
                         "500 Level",
                       ]}
                       defaultOption={activeLevel}
-                      onChange={setActiveLevel}
+                      onChange={(value) => {
+                        setActiveLevel(value);
+                        // Keep dropdown open after selection
+                      }}
                     />
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Dropdown for desktop */}
+            </div>{" "}
+            {/* Dropdown for desktop - using mobile style */}
             <div className="hidden md:block">
-              <div className="flex items-center gap-3">
-                <CustomDropdown
-                  options={[
-                    "All Category",
-                    "Business",
-                    "Design",
-                    "Marketing",
-                    "Development",
-                  ]}
-                />
-                <CustomDropdown
-                  options={[
-                    "All Levels",
-                    "100 Level",
-                    "200 Level",
-                    "300 Level",
-                    "400 Level",
-                    "500 Level",
-                  ]}
-                  defaultOption={activeLevel}
-                  onChange={setActiveLevel}
-                />
+              <div className="relative" ref={desktopDropdownRef}>
+                <button
+                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer"
+                  onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}>
+                  <Image
+                    src="/courses/filter.png"
+                    alt="Filter"
+                    width={24}
+                    height={24}
+                  />
+                </button>
+
+                {mobileFiltersOpen && (
+                  <div
+                    className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3"
+                    onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
+                  >
+                    <CustomDropdown
+                      options={[
+                        "All Departments",
+                        "Computer Science",
+                        "Biochemistry",
+                        "Mathematics",
+                        "Physics",
+                        "Electrical Engineering",
+                        "General Studies",
+                      ]}
+                      defaultOption={activeDepartment}
+                      onChange={(value) => {
+                        setActiveDepartment(value);
+                        // Keep dropdown open after selection
+                      }}
+                    />
+                    <CustomDropdown
+                      options={[
+                        "All Levels",
+                        "100 Level",
+                        "200 Level",
+                        "300 Level",
+                        "400 Level",
+                        "500 Level",
+                      ]}
+                      defaultOption={activeLevel}
+                      onChange={(value) => {
+                        setActiveLevel(value);
+                        // Keep dropdown open after selection
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -308,54 +389,77 @@ export default function CoursesPage() {
           {filteredCourses.map((course) => (
             <div
               key={course.id}
-              className={`px-4 py-3 border rounded-xl cursor-pointer flex items-center  w-full ${
+              className={`px-4 py-3 border rounded-xl cursor-pointer w-full ${
                 selectedCourse?.id === course.id
-                  ? " border-2 border-[#FFB0E8] bg-white"
+                  ? "border-2 border-[#FFB0E8] bg-white"
                   : "border-none hover:bg-gray-50 bg-white"
               }`}
               onClick={() => setSelectedCourse(course)}>
-              <div className="bg-blue-50 h-[87px] w-[87px] rounded-xl mr-3 flex-shrink-0 relative overflow-hidden">
-                <Image
-                  src={course.image || "/placeholder-course.jpg"}
-                  alt={course.title}
-                  fill
-                  sizes="77px"
-                  className="object-cover"
-                />
+              {/* Flex container for main content */}
+              <div className="flex items-start w-full">
+                <div className="bg-blue-50 h-[87px] w-[87px] rounded-xl mr-3 flex-shrink-0 relative overflow-hidden">
+                  <Image
+                    src={course.image || "/placeholder-course.jpg"}
+                    alt={course.title}
+                    fill
+                    sizes="77px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-grow">
+                  {/* Category and level */}
+                  <div className="flex text-sm items-center">
+                    <span className="text-[#8D8F91] text-[12px]">
+                      {course.department}
+                    </span>
+                    <span className="mx-2 text-gray-300">•</span>
+                    <span
+                      className="text-[12px]"
+                      style={{ color: getLevelColor(course.level) }}>
+                      {course.level}
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-semibold text-[#2E3135] text-[18px]">
+                    {course.title}
+                  </h3>
+
+                  {/* Stats for desktop and tablet */}
+                  <div className="hidden md:flex items-center text-xs text-gray-500 mt-4">
+                    <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                      <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
+                      {course.lessons}{" "}
+                      <span className="text-[#8D8F91] ml-1">Lessons</span>
+                    </span>
+                    <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                      <Clock size={14} className="mr-1 text-gray-400 " />{" "}
+                      {course.hours}{" "}
+                      <span className="text-[#8D8F91] ml-1">Hours</span>
+                    </span>
+                    <span className="flex items-center text-[#2E3135] font-semibold ">
+                      <Users size={14} className="mr-1 text-gray-400 " />{" "}
+                      {course.enrolled}{" "}
+                      <span className="text-[#8D8F91] ml-1">Enrolled</span>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex-grow">
-                {/* Category and level ABOVE the title */}
-                <div className="flex text-sm items-center">
-                  <span className="text-[#8D8F91] text-[12px]">
-                    {course.category}
-                  </span>
-                  <span className="mx-2 text-gray-300">•</span>
-                  <span
-                    className="text-[12px]"
-                    style={{ color: getLevelColor(course.level) }}>
-                    {course.level}
-                  </span>
-                </div>
 
-                {/* Title BELOW category and level */}
-                <h3 className="font-semibold text-[#2E3135]  text-[18px]">
-                  {course.title}
-                </h3>
-
-                <div className="flex items-center text-xs text-gray-500 mt-4">
-                  <span className="flex items-center mr-3">
-                    <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
-                    {course.lessons} Lessons
-                  </span>
-                  <span className="flex items-center mr-3">
-                    <Clock size={14} className="mr-1 text-gray-400" />{" "}
-                    {course.hours} Hours
-                  </span>
-                  <span className="flex items-center">
-                    <Users size={14} className="mr-1 text-gray-400" />{" "}
-                    {course.enrolled} Enrolled
-                  </span>
-                </div>
+              {/* Mobile stats in their own block below the main content */}
+              <div className="md:hidden w-full flex items-center text-xs text-gray-500 mt-4 pt-3 pl-1  border-t-2 border-gray-100">
+                <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                  <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
+                  {course.lessons}
+                </span>
+                <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                  <Clock size={14} className="mr-1 text-gray-400" />{" "}
+                  {course.hours}
+                </span>
+                <span className="flex items-center text-[#2E3135] font-semibold">
+                  <Users size={14} className="mr-1 text-gray-400" />{" "}
+                  {course.enrolled}
+                </span>
               </div>
             </div>
           ))}
@@ -363,12 +467,12 @@ export default function CoursesPage() {
       </div>
 
       {/* Right side - Course description */}
-      <div className="bg-white rounded-xl   w-full lg:ml-auto h-[916px] p-4">
+      <div className="bg-white rounded-xl   w-full  lg:ml-auto h-fit p-4">
         {selectedCourse ? (
           <div>
             <div className="mb-4   ">
               <div className="text-[12px] text-[#8D8F91] flex items-center">
-                {selectedCourse.category}{" "}
+                {selectedCourse.department}{" "}
                 <span className="mx-2 text-gray-300 text-sm">•</span>
                 <span style={{ color: getLevelColor(selectedCourse.level) }}>
                   {selectedCourse.level}
@@ -399,18 +503,52 @@ export default function CoursesPage() {
                   {selectedCourse.status}
                 </span>
               </div>
-              <div className="flex items-center text-xs text-gray-500 mt-3 gap-3.5 ">
+              <div className="flex flex-wrap items-center text-xs text-gray-500 mt-3 gap-3.5">
+                {/* Rating and reviews */}
+                <span className="flex items-center mr-4">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="mr-1">
+                    <path
+                      d="M10 15.27L16.18 18l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 3.73L3.82 18z"
+                      fill="#F6C244"
+                    />
+                  </svg>
+                  <span className="font-semibold text-[#2E3135]">4.8</span>
+                  <span className="text-[#797B7E] font-normal ml-1">
+                    (1,250 Reviews)
+                  </span>
+                </span>
+
+                {/* Lessons count */}
                 <span className="flex items-center mr-3">
                   <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
-                  {selectedCourse.lessons} Lessons
+                  <span className="text-[#2E3135] font-semibold mr-1">
+                    {selectedCourse.lessons}{" "}
+                  </span>{" "}
+                  Lessons
                 </span>
+
+                {/* Hours count */}
                 <span className="flex items-center mr-3">
                   <Clock size={14} className="mr-1 text-gray-400" />{" "}
-                  {selectedCourse.hours} Hours
+                  <span className="text-[#2E3135] font-semibold mr-1">
+                    {selectedCourse.hours}{" "}
+                  </span>{" "}
+                  Hours
                 </span>
+
+                {/* Enrolled count */}
                 <span className="flex items-center">
                   <Users size={14} className="mr-1 text-gray-400" />{" "}
-                  {selectedCourse.enrolled} Enrolled
+                  <span className="text-[#2E3135] font-semibold mr-1">
+                    {selectedCourse.enrolled}{" "}
+                  </span>{" "}
+                  Enrolled
                 </span>
               </div>
             </div>
