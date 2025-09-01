@@ -478,28 +478,27 @@ export default function CoursesPage() {
                   {selectedCourse.level}
                 </span>
               </div>
-              <div className="flex items-center gap-3 ">
-                <h2 className="text-[26px] font-bold">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <h2 className="text-[22px] sm:text-[26px] font-bold">
                   {selectedCourse.title}
                 </h2>
                 <span
-                  className={`text-xs w-[68px]  h-[24px] rounded-full flex justify-center items-center text-[14px]  font-medium  ${
+                  className={`text-xs min-w-[68px] w-fit px-3 h-[24px] rounded-full flex justify-center items-center text-[13px] sm:text-[14px] font-medium self-start sm:self-auto ${
                     selectedCourse.status === "Active"
                       ? "bg-[#FCF2F9] text-[#2E3135]"
                       : selectedCourse.status === "Draft"
                       ? "bg-[#FCF2F9] text-[#2E3135]"
                       : "bg-gray-100 text-gray-800"
                   }`}>
-                  <div className="w-[6px] h-[6px] items-center mr-1">
+                  <div className="w-[6px] h-[6px] flex items-center mr-1.5">
                     <Image
                       src="/courses/Color Indicator.png"
-                      alt=" color "
+                      alt="status indicator"
                       width={6}
                       height={6}
                       className="object-cover"
                     />
                   </div>
-
                   {selectedCourse.status}
                 </span>
               </div>
