@@ -10,11 +10,21 @@
   },
   "dependencies": {
     "@next/font": "^14.2.15",
+    "@prisma/client": "^6.15.0",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.56.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "lucide-react": "^0.541.0",
     "next": "15.5.0",
+    "nextjs-toploader": "^3.8.16",
+    "prisma": "^6.15.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-scrollbar-hide": "^4.0.0"
+    "tailwind-merge": "^3.3.1",
+    "tailwind-scrollbar-hide": "^4.0.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

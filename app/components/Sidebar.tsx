@@ -15,6 +15,8 @@ import {
   DollarSign,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface SidebarLinkProps {
   href: string;
@@ -48,6 +50,13 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({
 export default function Sidebar() {
   // Get the current path to determine which link is active
   const pathname = usePathname();
+  const { signOut } = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/login");
+  };
 
   return (
     <aside className="lg:w-[221px] md:max-lg:w-[60px] h-screen flex flex-col bg-white ">
@@ -150,7 +159,9 @@ export default function Sidebar() {
 
       {/* Sign Out */}
       <div className="lg:p-3 md:max-lg:py-3 md:max-lg:flex md:max-lg:justify-center border-gray-200">
-        <button className="flex items-center gap-3 lg:px-4 py-2 text-[#797B7E] bg-[#F5F8FF] rounded-lg transition-colors cursor-pointer lg:w-[173px] h-[39px] md:max-lg:w-[40px] md:max-lg:justify-center">
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-3 lg:px-4 py-2 text-[#797B7E] bg-[#F5F8FF] rounded-lg transition-colors cursor-pointer lg:w-[173px] h-[39px] md:max-lg:w-[40px] md:max-lg:justify-center">
           <LogOut size={20} />
           <span className="text-[14px] font-medium font-hanken max-lg:hidden">
             Sign Out

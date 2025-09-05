@@ -1,21 +1,120 @@
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import { Search, Bell, Settings } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import Image from "next/image";
 
 interface HeaderProps {
   title: string;
-  subtitle?: string;
-  dashboardColor?: string; // Custom color for "Dashboard" in the breadcrumb
-  separatorColor?: string; // Custom color for the separator "/"
-  pageColor?: string; // Custom color for the current page in the breadcrumb
+  subtitle?: string | null;
+  dashboardColor?: string;
+  separatorColor?: string;
+  pageColor?: string;
 }
 
 export default function Header({
   title = "Dashboard",
-  subtitle = "Hello Phillip, welcome back!",
-  dashboardColor = "text-blue-600", // Default color for "Dashboard"
-  separatorColor = "text-gray-500", // Default color for separator
-  pageColor = "text-gray-500", // Default color for current page
+  subtitle,
+  dashboardColor = "text-blue-600",
+  separatorColor = "text-gray-500",
+  pageColor = "text-gray-500",
 }: HeaderProps) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      console.log("User metadata:", user.user_metadata);
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Extract first name from user metadata or email
+  const getFirstName = () => {
+    // First try to get name from OAuth metadata
+    if (user?.user_metadata) {
+      // Try different metadata fields where name might be stored
+      const fullName =
+        user.user_metadata.full_name ||
+        user.user_metadata.name ||
+        user.user_metadata.given_name;
+
+      if (fullName && typeof fullName === "string") {
+        // If we have a full name, split it to get the first name
+        return fullName.split(" ")[0];
+      }
+    }
+
+    // If no name in metadata, fall back to email
+    if (user?.email) {
+      const emailName = user.email.split("@")[0];
+      let cleanName = emailName.replace(/[._]/g, " ").replace(/[0-9]/g, "");
+
+      cleanName = cleanName
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      return cleanName.split(" ")[0];
+    }
+
+    return "User";
+  };
+
+  // Get full display name from user metadata or email
+  const getDisplayName = () => {
+    // First try to get full name from OAuth metadata
+    if (user?.user_metadata) {
+      const fullName = user.user_metadata.full_name || user.user_metadata.name;
+
+      if (fullName && typeof fullName === "string") {
+        return fullName; // Use the complete name from metadata
+      }
+    }
+
+    // If no name in metadata, fall back to email-based name
+    if (user?.email) {
+      const emailName = user.email.split("@")[0];
+      return emailName
+        .replace(/[._]/g, " ")
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+
+    return "User";
+  };
+
+  const firstName = getFirstName();
+  const displayName = getDisplayName();
+
+  // Get avatar URL from metadata
+  const avatarUrl =
+    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+
+  // Determine what to display in the subtitle area
+  const renderSubtitle = () => {
+    // If it's a breadcrumb style subtitle (contains "Dashboard /")
+    if (subtitle && subtitle.includes("Dashboard /")) {
+      return (
+        <p className="text-sm font-hanken">
+          <span className={`${dashboardColor} font-medium`}>Dashboard</span>
+          <span className={separatorColor}> / </span>
+          <span className={pageColor}>{subtitle.split("Dashboard / ")[1]}</span>
+        </p>
+      );
+    }
+
+    // If it's the main dashboard page (subtitle is null) or any other page without breadcrumb
+    return (
+      <p className="text-sm text-gray-500 font-hanken">
+        {subtitle || `Hello ${firstName}, welcome back!`}
+      </p>
+    );
+  };
+
   return (
     <header className="h-16 bg-[#F5F8FF] px-6 items-center max-md:hidden md:flex ">
       {/* Left section containing title, welcome message and search bar */}
@@ -25,17 +124,7 @@ export default function Header({
           <h1 className="text-2xl font-bold text-gray-800 font-hanken">
             {title}
           </h1>
-          {subtitle && subtitle.includes("Dashboard") ? (
-            <p className="text-sm font-hanken">
-              <span className={`${dashboardColor} font-medium`}>Dashboard</span>
-              <span className={separatorColor}> / </span>
-              <span className={pageColor}>
-                {subtitle.split("Dashboard / ")[1]}
-              </span>
-            </p>
-          ) : (
-            <p className="text-sm text-gray-500 font-hanken">{subtitle}</p>
-          )}
+          {renderSubtitle()}
         </div>
 
         {/* Search bar */}
@@ -54,17 +143,28 @@ export default function Header({
         {/* Profile */}
         <div className="flex items-center">
           <div className="relative w-[40px] h-[40px] rounded-lg overflow-hidden bg-purple-100">
-            {/* Placeholder for profile image - replace with actual image path when available */}
-            <div className="absolute inset-0 rounded-lg bg-[#F588D6] flex items-center justify-center text-white font-medium">
-              PS
-            </div>
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={displayName}
+                width={40}
+                height={40}
+                className="rounded-lg object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 rounded-lg bg-[#F588D6] flex items-center justify-center text-white font-medium">
+                {firstName.charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
           {/* Text container - completely hidden on tablet/small laptop screens, no space taken */}
           <div className="text-sm max-lg:hidden ml-2">
             <p className="font-medium text-gray-800 font-hanken">
-              Phillip Stanton
+              {displayName}
             </p>
-            <p className="text-xs text-gray-500 font-hanken">Admin</p>
+            <p className="text-xs text-gray-500 font-hanken">
+              {user?.email || ""}
+            </p>
           </div>
         </div>
 

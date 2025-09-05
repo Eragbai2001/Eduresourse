@@ -2,6 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
+import NextTopLoader from "nextjs-toploader"; // Correctly imported
 import Header from "@/app/components/Header";
 import SmallScreenHeader from "@/app/components/SmallScreenHeader";
 import Sidebar from "@/app/components/Sidebar";
@@ -10,11 +11,11 @@ import Sidebar from "@/app/components/Sidebar";
 function getPageInfo(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
 
-  // Default for dashboard
+  // Main dashboard page
   if (segments.length === 1 && segments[0] === "dashboard") {
     return {
       title: "Dashboard",
-      subtitle: "Hello Phillip, welcome back!",
+      subtitle: null, // null will cause Header to use the welcome message
     };
   }
 
@@ -24,33 +25,8 @@ function getPageInfo(pathname: string) {
     // Capitalize the first letter
     const title = currentPage.charAt(0).toUpperCase() + currentPage.slice(1);
 
-    // Set appropriate subtitles for each page
-    let subtitle = "";
-    switch (currentPage.toLowerCase()) {
-      case "courses":
-        subtitle = "Dashboard / Courses";
-        break;
-      case "students":
-        subtitle = "Dashboard / Students";
-        break;
-      case "instructors":
-        subtitle = "Dashboard / Instructors";
-        break;
-      case "enrollments":
-        subtitle = "Dashboard / Enrollments";
-        break;
-      case "financials":
-        subtitle = "Dashboard / Financials";
-        break;
-      case "messages":
-        subtitle = "Dashboard / Messages";
-        break;
-      case "calendar":
-        subtitle = "Dashboard / Calendar";
-        break;
-      default:
-        subtitle = `Manage your ${currentPage.toLowerCase()}`;
-    }
+    // Create breadcrumb style subtitle
+    const subtitle = `Dashboard / ${title}`;
 
     return { title, subtitle };
   }
@@ -58,7 +34,7 @@ function getPageInfo(pathname: string) {
   // Default fallback
   return {
     title: "Dashboard",
-    subtitle: "Hello Phillip, welcome back!",
+    subtitle: null,
   };
 }
 
@@ -76,6 +52,19 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#F5F8FF] flex flex-col">
+      {/* NextTopLoader with custom color */}
+      <NextTopLoader
+        color="#FFC2ED"
+        initialPosition={0.08}
+        crawlSpeed={200}
+        height={5}
+        crawl={true}
+        showSpinner={true}
+        easing="ease"
+        speed={200}
+        shadow="0 0 10px #FFC2ED, 0 0 5px #FFC2ED"
+      />
+
       <div className="flex flex-1">
         {/* Sidebar - visible at md screens and above, now fixed */}
         <div className="md:block hidden md:sticky md:top-0 md:h-screen">
