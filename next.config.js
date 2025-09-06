@@ -9,6 +9,8 @@ const nextConfig = {
       "images.unsplash.com", // In case you use Unsplash for demo images
     ],
   },
+  // Fix for multiple lockfiles warning
+  outputFileTracingRoot: __dirname,
 };
 
 module.exports = nextConfig;

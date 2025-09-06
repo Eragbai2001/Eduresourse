@@ -63,32 +63,7 @@ export default function Header({
     return "User";
   };
 
-  // Get full display name from user metadata or email
-  const getDisplayName = () => {
-    // First try to get full name from OAuth metadata
-    if (user?.user_metadata) {
-      const fullName = user.user_metadata.full_name || user.user_metadata.name;
-
-      if (fullName && typeof fullName === "string") {
-        return fullName; // Use the complete name from metadata
-      }
-    }
-
-    // If no name in metadata, fall back to email-based name
-    if (user?.email) {
-      const emailName = user.email.split("@")[0];
-      return emailName
-        .replace(/[._]/g, " ")
-        .split(" ")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-    }
-
-    return "User";
-  };
-
   const firstName = getFirstName();
-  const displayName = getDisplayName();
 
   // Get avatar URL from metadata
   const avatarUrl =
@@ -124,7 +99,11 @@ export default function Header({
           <h1 className="text-2xl font-bold text-gray-800 font-hanken">
             {title}
           </h1>
-          {renderSubtitle()}
+          {loading ? (
+            <div className="h-5 w-48 bg-gray-200 rounded-md animate-pulse"></div>
+          ) : (
+            renderSubtitle()
+          )}
         </div>
 
         {/* Search bar */}
@@ -142,47 +121,66 @@ export default function Header({
       <div className="flex items-center justify-center pl-3.5 py-2 rounded-lg space-x-2">
         {/* Profile */}
         <div className="flex items-center">
-          <div className="relative w-[40px] h-[40px] rounded-lg overflow-hidden bg-purple-100">
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt={displayName}
-                width={40}
-                height={40}
-                className="rounded-lg object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 rounded-lg bg-[#F588D6] flex items-center justify-center text-white font-medium">
-                {firstName.charAt(0).toUpperCase()}
+          {loading ? (
+            <>
+              <div className="w-[40px] h-[40px] rounded-lg bg-gray-200 animate-pulse"></div>
+              <div className="ml-2 max-lg:hidden">
+                <div className="h-4 w-24 bg-gray-200 rounded-md animate-pulse mb-1"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
-            )}
-          </div>
-          {/* Text container - completely hidden on tablet/small laptop screens, no space taken */}
-          <div className="text-sm max-lg:hidden ml-2">
-            <p className="font-medium text-gray-800 font-hanken">
-              {displayName}
-            </p>
-            <p className="text-xs text-gray-500 font-hanken">
-              {user?.email || ""}
-            </p>
-          </div>
+            </>
+          ) : (
+            <>
+              <div className="relative w-[40px] h-[40px] rounded-lg overflow-hidden bg-purple-100">
+                {avatarUrl && (
+                  <Image
+                    src={avatarUrl}
+                    alt="User avatar"
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-cover"
+                  />
+                )}
+              </div>
+              {/* Text container - completely hidden on tablet/small laptop screens, no space taken */}
+              <div className="text-sm max-lg:hidden ml-2">
+                <p className="font-medium text-gray-800 font-hanken">
+                  {user?.user_metadata?.full_name ||
+                    user?.user_metadata?.name ||
+                    ""}
+                </p>
+                <p className="text-xs text-gray-500 font-hanken">
+                  {user?.email || ""}
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Notifications */}
-          <div className="bg-white rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
-            <button className="relative ">
-              <Bell className="h-5 w-5 text-gray-500" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-[#F588D6] rounded-full"></span>
-            </button>
-          </div>
+          {loading ? (
+            <>
+              <div className="w-[40px] h-[40px] rounded-lg bg-gray-200 animate-pulse"></div>
+              <div className="w-[40px] h-[40px] rounded-lg bg-gray-200 animate-pulse"></div>
+            </>
+          ) : (
+            <>
+              {/* Notifications */}
+              <div className="bg-white rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
+                <button className="relative ">
+                  <Bell className="h-5 w-5 text-gray-500" />
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-[#F588D6] rounded-full"></span>
+                </button>
+              </div>
 
-          {/* Settings */}
-          <div className="bg-white rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
-            <button className=" ">
-              <Settings className="h-5 w-5 text-gray-500" />
-            </button>
-          </div>
+              {/* Settings */}
+              <div className="bg-white rounded-lg p-1.5 w-[40px] h-[40px] justify-center flex">
+                <button className=" ">
+                  <Settings className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>
