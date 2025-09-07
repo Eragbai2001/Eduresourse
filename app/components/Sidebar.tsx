@@ -61,13 +61,13 @@ export default function Sidebar() {
   return (
     <aside className="lg:w-[221px] md:max-lg:w-[60px] h-screen flex flex-col bg-white ">
       {/* Logo area with actual image */}
-      <div className="flex items-center gap-2 py-5 max-lg:justify-center lg:px-4 md:max-lg:px-0">
-        <div className="relative w-8 h-8 overflow-hidden">
+      <div className="flex gap-2 py-6 pt-3 max-lg:justify-center lg:px-4 md:max-lg:px-0 items-center">
+        <div className="relative w-10 h-10 overflow-visible">
           <Image
             src="/logo.png"
             alt="Logo"
             fill
-            className="object-cover"
+            className="object-contain"
             priority
           />
         </div>
