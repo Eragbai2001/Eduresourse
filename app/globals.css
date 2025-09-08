@@ -162,3 +162,41 @@ body {
     transform: translateX(0);
   }
 }
+
+
+/* Remove autofill background color for input fields */
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #f3f4f6 inset !important;
+  /* Tailwind's bg-gray-100 */
+  box-shadow: 0 0 0 1000px #f3f4f6 inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  /* Tailwind's text-gray-900 */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Custom tab shape with inward curve at bottom right */
+.custom-tab {
+  position: relative;
+}
+
+.custom-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  background: white;
+  /* Default background */
+  border-radius: 0 0 0 10px;
+  z-index: 2;
+}
+
+/* When tab is active, match its background color */
+.custom-tab.active::after {
+  background: rgb(243 244 246);
+  /* Tailwind bg-gray-100 color */
+}

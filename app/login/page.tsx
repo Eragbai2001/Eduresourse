@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { AuthError } from "@supabase/supabase-js";
+import { LoginImage } from "../components/LoginImage";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -64,54 +66,107 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Validate inputs
+      if (!email || !password) {
+        throw new Error("Email and password are required");
+      }
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+
+      // Check if login was successful
+      if (data?.user) {
+        toast.success("Login successful! Redirecting...");
+        
+        // Redirect to dashboard after successful login
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
+      }
     } catch (error: unknown) {
+      console.error("Sign-in error:", error); // For debugging
       const errorMessage =
-        error instanceof AuthError
-          ? error.message
-          : "Failed to sign in with email and password";
-      setError(errorMessage);
+        error instanceof AuthError ? error.message : 
+        error instanceof Error ? error.message : 
+        "Failed to sign in with email and password";
+      toast.error(errorMessage);
+      setError(null); // Clear the error state since we're using toast
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Validate email and password
+      if (!email || !password) {
+        throw new Error("Email and password are required");
+      }
+      
+      if (password.length < 6) {
+        throw new Error("Password must be at least 6 characters");
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+
+      console.log("Sign-up response:", data); // For debugging
+
+      // Check if email confirmation is required
+      if (data?.user?.identities?.length === 0) {
+        toast.error("This email is already registered");
+        return;
+      }
+
+      if (data?.user?.confirmed_at || data?.user?.email_confirmed_at) {
+        toast.success("Account created successfully! You can now log in.");
+      } else {
+        toast.success(
+          "Account created! Please check your email to confirm your account."
+        );
+      }
+
+      // Reset form
+      setEmail("");
+      setPassword("");
+      
+    } catch (error: unknown) {
+      console.error("Sign-up error:", error); // For debugging
+      const errorMessage =
+        error instanceof AuthError ? error.message : 
+        error instanceof Error ? error.message : 
+        "Failed to create account";
+      toast.error(errorMessage);
+      setError(null); // Clear the error state since we're using toast
+    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
-      {/* Left Side - Video Background */}
-      <div className="w-full lg:w-3/5 bg-black relative overflow-hidden py-10 lg:py-0 lg:min-h-screen">
-        {/* Video background */}
-        <div className="absolute inset-0 w-full h-full">
-          <video
-            className="w-full h-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster="/images/video-poster.jpg" // Optional: Add a poster image while video loads
-          >
-            <source src="/videos/education-video.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          {/* Overlay to ensure text visibility */}
-          <div className="absolute inset-0 bg-black/40"></div>
-        </div>
-
-        {/* Text content overlay */}
-        <div className="flex items-center justify-center w-full h-full relative z-10 lg:min-h-screen">
-          <div className="text-center space-y-8 px-6">
-          
-          </div>
-        </div>
-      </div>
+    
+      {/* Left Side - Image carousel */}
+      <LoginImage title="Share, Learn, Succeed" />
 
       {/* Right Side - Login Form (RIVE-inspired) */}
-      <div className="w-full lg:w-2/5 bg-white flex items-center justify-center p-8 lg:min-h-screen font-hanken">
+      <div className="w-full lg:w-2/5 bg-white flex items-center justify-center p-8 min-h-screen font-hanken">
         <div className="w-full max-w-md animate-slide-in-right">
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-500 rounded-lg text-base">
@@ -133,7 +188,7 @@ export default function LoginPage() {
                 />
               </div>
               <span className="font-semibold text-gray-900 font-hanken text-[28px]">
-                <span className="font-semibold text-gray-900 font-hanken max-lg:hidden text-4xl">
+                <span className="font-semibold text-gray-900 font-hanken  text-4xl">
                   Coursify
                 </span>
               </span>
@@ -178,72 +233,94 @@ export default function LoginPage() {
           <div className="border-2 border-gray-100 w-[95%] my-6"></div>
 
           {/* Tab selector for Login/Signup */}
-          <div className="grid grid-cols-4 w-[95%]">
-            <button
-              onClick={() => setActiveTab("login")}
-              className={`py-4 font-medium rounded-t-lg w-full text-xl ${
-                activeTab === "login"
-                  ? "bg-gray-100 text-black font-bold"
-                  : "bg-white text-gray-500"
-              }`}>
-              <div>Log in</div>
-            </button>
-            <button
-              onClick={() => setActiveTab("signup")}
-              className={`py-4 font-medium rounded-t-lg w-full text-xl ${
-                activeTab === "signup"
-                  ? "bg-gray-100 text-gray-800 "
-                  : "bg-white text-gray-500 rounded-bl-lg"
-              }`}>
-              <div>Sign up</div>
-            </button>
-          </div>
-
-          {/* Login form */}
-          <form onSubmit={handleEmailSignIn}>
-            <div className="space-y-1 w-[95%]">
-              <div>
-                <input
-                  type="email"
-                  placeholder="email or username"
-                  className="w-full p-4 bg-gray-100 rounded-tr-lg outline-none text-lg"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="password"
-                  className="w-full p-4 bg-gray-100 rounded-md outline-none text-lg"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+          <div className="w-[95%]">
+            {/* Tab buttons in their own row */}
+            <div className="grid grid-cols-4">
+              <div className=" bg-gray-100 rounded-t-xl">
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-base">
-                  {showPassword ? "Hide" : "Show"}
+                  onClick={() => setActiveTab("login")}
+                  className={`py-4 font-medium w-full text-xl relative rounded-br-xl  rounded-tr-xl rounded-tl-xl ${
+                    activeTab === "login"
+                      ? "bg-gray-100 text-black font-bold  "
+                      : "bg-white text-gray-500"
+                  }`}>
+                  <div>Log in</div>
                 </button>
               </div>
+              <div className=" bg-gray-100 rounded-t-xl ">
+                <button
+                  onClick={() => setActiveTab("signup")}
+                  className={`py-4 font-medium  w-full text-xl rounded-bl-xl  rounded-tr-xl rounded-tl-xl ${
+                    activeTab === "signup"
+                      ? "bg-gray-100 text-gray-800 rounded-t-lg"
+                      : "bg-white text-gray-500"
+                  }`}>
+                  <div>Sign up</div>
+                </button>
+              </div>
+              <div className=" bg-gray-100 rounded-t-xl">
+                <button className="py-4 font-medium w-full h-full text-xl relative rounded-bl-xl bg-white ">
+                  <div className=""></div>
+                </button>
+              </div>
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-black hover:bg-gray-700 text-white py-4 rounded-b-xl font-medium transition-all text-xl">
-                {loading ? "Loading..." : "Log in"}
+            {/* Form in its own container */}
+            <form
+              onSubmit={
+                activeTab === "login" ? handleEmailSignIn : handleEmailSignUp
+              }
+              className="w-full">
+              <div className="space-y-1 w-full">
+                <div>
+                  <input
+                    type="email"
+                    placeholder={
+                      activeTab === "login" ? "email or username" : "email"
+                    }
+                    className="w-full p-4 bg-gray-100 rounded-tr-lg outline-none text-lg"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="password"
+                    className="w-full p-4 bg-gray-100 rounded-md outline-none text-lg"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-base">
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-black hover:bg-gray-700 text-white py-4 rounded-b-xl font-medium transition-all text-xl">
+                  {loading
+                    ? "Loading..."
+                    : activeTab === "login"
+                    ? "Log in"
+                    : "Sign up"}
+                </button>
+              </div>
+            </form>
+
+            {/* Additional options */}
+            <div className="mt-6 text-left">
+              <button className="text-black hover:text-gray-700 text-lg cursor-pointer">
+                Forgot password?
               </button>
             </div>
-          </form>
-
-          {/* Additional options */}
-          <div className="mt-6 text-center">
-            <button className="text-[black] hover:text-gray-700 text-lg cursor-pointer">
-              Forgot password?
-            </button>
           </div>
         </div>
       </div>
