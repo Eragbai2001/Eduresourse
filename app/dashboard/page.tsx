@@ -1,6 +1,10 @@
 import StatCard from "@/app/components/StatCard";
 
-export default function DashboardPage() {
+
+
+
+export default async function DashboardPage() {
+
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">

@@ -23,11 +23,20 @@ export default function Header({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Start with loading state true
+    setLoading(true);
+
     if (user) {
       console.log("User metadata:", user.user_metadata);
+      // Only set loading to false when we have user data
       setLoading(false);
     } else {
-      setLoading(false);
+      // If no user after a short delay, still set loading to false to show generic state
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 500);
+
+      return () => clearTimeout(timer);
     }
   }, [user]);
 
@@ -35,7 +44,11 @@ export default function Header({
   const getFirstName = () => {
     // First try to get name from OAuth metadata
     if (user?.user_metadata) {
+      // Log the metadata to see what's available
+      console.log("User metadata in getFirstName:", user.user_metadata);
+
       // Try different metadata fields where name might be stored
+      // Prioritize full_name from email signup users
       const fullName =
         user.user_metadata.full_name ||
         user.user_metadata.name ||
@@ -63,11 +76,19 @@ export default function Header({
     return "User";
   };
 
-  const firstName = getFirstName();
+  // Only get the firstName if we're not in loading state
+  const firstName = loading ? null : getFirstName();
 
-  // Get avatar URL from metadata
-  const avatarUrl =
-    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+  // Get avatar URL from metadata (from OAuth providers) if available
+  // Ignore UI Avatars URLs to prevent the flickering issue
+  let avatarUrl = loading
+    ? ""
+    : user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+
+  // If the avatar URL is from UI Avatars, don't use it
+  if (avatarUrl && avatarUrl.includes("ui-avatars.com")) {
+    avatarUrl = "";
+  }
 
   // Determine what to display in the subtitle area
   const renderSubtitle = () => {
@@ -85,7 +106,8 @@ export default function Header({
     // If it's the main dashboard page (subtitle is null) or any other page without breadcrumb
     return (
       <p className="text-sm text-gray-500 font-hanken">
-        {subtitle || `Hello ${firstName}, welcome back!`}
+        {subtitle ||
+          (firstName ? `Hello ${firstName}, welcome back!` : `Welcome back!`)}
       </p>
     );
   };
@@ -131,8 +153,10 @@ export default function Header({
             </>
           ) : (
             <>
-              <div className="relative w-[40px] h-[40px] rounded-lg overflow-hidden bg-purple-100">
-                {avatarUrl && (
+              {loading ? (
+                <div className="w-[40px] h-[40px] rounded-lg bg-gray-200 animate-pulse"></div>
+              ) : avatarUrl ? (
+                <div className="relative w-[40px] h-[40px] rounded-lg overflow-hidden">
                   <Image
                     src={avatarUrl}
                     alt="User avatar"
@@ -140,8 +164,12 @@ export default function Header({
                     height={40}
                     className="rounded-lg object-cover"
                   />
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center w-[40px] h-[40px] rounded-lg bg-[#FFB0E8] text-white font-medium">
+                  {firstName ? firstName.substring(0, 2).toUpperCase() : ""}
+                </div>
+              )}
               {/* Text container - completely hidden on tablet/small laptop screens, no space taken */}
               <div className="text-sm max-lg:hidden ml-2">
                 <p className="font-medium text-gray-800 font-hanken">

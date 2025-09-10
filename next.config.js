@@ -7,6 +7,7 @@ const nextConfig = {
       "github.githubassets.com", // More GitHub assets
       "avatar.vercel.sh", // Vercel avatars
       "images.unsplash.com", // In case you use Unsplash for demo images
+      "ui-avatars.com", // UI Avatars API for email signup users
     ],
   },
   // Fix for multiple lockfiles warning

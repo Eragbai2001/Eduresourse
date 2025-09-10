@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login"); // login or signup
 
@@ -38,28 +39,28 @@ export default function LoginPage() {
     }
   };
 
-  const handleGitHubSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // const handleGitHubSignIn = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "github",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+  //     const { error } = await supabase.auth.signInWithOAuth({
+  //       provider: "github",
+  //       options: {
+  //         redirectTo: `${window.location.origin}/auth/callback`,
+  //       },
+  //     });
 
-      if (error) throw error;
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof AuthError
-          ? error.message
-          : "Failed to sign in with GitHub";
-      setError(errorMessage);
-      setLoading(false);
-    }
-  };
+  //     if (error) throw error;
+  //   } catch (error: unknown) {
+  //     const errorMessage =
+  //       error instanceof AuthError
+  //         ? error.message
+  //         : "Failed to sign in with GitHub";
+  //     setError(errorMessage);
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,20 +110,30 @@ export default function LoginPage() {
       setLoading(true);
       setError(null);
 
-      // Validate email and password
+      // Validate email, password, and full name
       if (!email || !password) {
         throw new Error("Email and password are required");
+      }
+
+      if (!fullName) {
+        throw new Error("Full name is required");
       }
 
       if (password.length < 6) {
         throw new Error("Password must be at least 6 characters");
       }
 
+      // We don't need to generate an avatar URL anymore
+      // Our Header component will display initials with the brand color background
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            full_name: fullName,
+          },
         },
       });
 
@@ -147,6 +158,7 @@ export default function LoginPage() {
       // Reset form
       setEmail("");
       setPassword("");
+      setFullName("");
     } catch (error: unknown) {
       console.error("Sign-up error:", error); // For debugging
       const errorMessage =
@@ -165,7 +177,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* Left Side - Image carousel */}
-      <LoginImage title="Share, Learn, Succeed" />
+      <LoginImage  />
 
       {/* Right Side - Login Form (RIVE-inspired) */}
       <div className="w-full lg:w-2/5 bg-white flex items-center justify-center p-8 min-h-screen font-hanken">
@@ -273,13 +285,28 @@ export default function LoginPage() {
               }
               className="w-full">
               <div className="space-y-1 w-full">
+                {activeTab === "signup" && (
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="full name"
+                      className="w-full p-4 bg-gray-100 rounded-tr-lg outline-none text-lg"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+
                 <div>
                   <input
                     type="email"
                     placeholder={
                       activeTab === "login" ? "email or username" : "email"
                     }
-                    className="w-full p-4 bg-gray-100 rounded-tr-lg outline-none text-lg"
+                    className={`w-full p-4 bg-gray-100 ${
+                      activeTab === "login" ? "rounded-tr-lg" : ""
+                    } outline-none text-lg`}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required

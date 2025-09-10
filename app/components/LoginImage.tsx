@@ -3,16 +3,13 @@ import { carouselData } from "./carouselData";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
-interface LoginImageProps {
-  title?: string;
-  description?: string;
-}
 
-export function LoginImage({ title }: LoginImageProps) {
+
+export function LoginImage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const { images, quotes } = carouselData;
+  const { images} = carouselData;
 
   // Automatic image change every 5 seconds with transition
   useEffect(() => {
