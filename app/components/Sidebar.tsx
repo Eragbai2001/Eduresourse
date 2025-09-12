@@ -84,7 +84,8 @@ export default function Sidebar() {
           text="Dashboard"
           isActive={pathname === "/dashboard"}
         />
-        <SidebarLink
+
+        {/* <SidebarLink
           href="/dashboard/messages"
           icon={<MessageSquare size={20} />}
           text="Messages"
@@ -101,7 +102,8 @@ export default function Sidebar() {
           icon={<FileText size={20} />}
           text="Enrollments"
           isActive={pathname === "/dashboard/enrollments"}
-        />
+        /> */}
+
         <SidebarLink
           href="/dashboard/courses"
           icon={<Bookmark size={20} />}
@@ -109,12 +111,12 @@ export default function Sidebar() {
           isActive={pathname === "/dashboard/courses"}
         />
         <SidebarLink
-          href="/dashboard/instructors"
+          href="/dashboard/upload"
           icon={<Users size={20} />}
-          text="Instructors"
-          isActive={pathname === "/dashboard/instructors"}
+          text="Upload"
+          isActive={pathname === "/dashboard/upload"}
         />
-        <SidebarLink
+        {/* <SidebarLink
           href="/dashboard/students"
           icon={<GraduationCap size={20} />}
           text="Students"
@@ -125,7 +127,7 @@ export default function Sidebar() {
           icon={<DollarSign size={20} />}
           text="Financials"
           isActive={pathname === "/dashboard/financials"}
-        />
+        /> */}
       </div>
 
       {/* Upgrade card - centered with flex, hidden on smaller screens and tablet */}
