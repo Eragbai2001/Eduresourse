@@ -121,41 +121,41 @@ export default function SmallScreenHeader({
                   label: "Dashboard",
                   icon: <LayoutDashboard size={18} />,
                 },
-                {
-                  href: "/dashboard/messages",
-                  label: "Messages",
-                  icon: <MessageSquare size={18} />,
-                },
-                {
-                  href: "/dashboard/calendar",
-                  label: "Calendar",
-                  icon: <Calendar size={18} />,
-                },
-                {
-                  href: "/dashboard/enrollments",
-                  label: "Enrollments",
-                  icon: <FileText size={18} />,
-                },
+                // {
+                //   href: "/dashboard/messages",
+                //   label: "Messages",
+                //   icon: <MessageSquare size={18} />,
+                // },
+                // {
+                //   href: "/dashboard/calendar",
+                //   label: "Calendar",
+                //   icon: <Calendar size={18} />,
+                // },
+                // {
+                //   href: "/dashboard/enrollments",
+                //   label: "Enrollments",
+                //   icon: <FileText size={18} />,
+                // },
                 {
                   href: "/dashboard/courses",
                   label: "Courses",
                   icon: <Bookmark size={18} />,
                 },
                 {
-                  href: "/dashboard/instructors",
-                  label: "Instructors",
+                  href: "/dashboard/upload",
+                  label: "Upload",
                   icon: <Users size={18} />,
                 },
-                {
-                  href: "/dashboard/students",
-                  label: "Students",
-                  icon: <GraduationCap size={18} />,
-                },
-                {
-                  href: "/dashboard/financials",
-                  label: "Financials",
-                  icon: <DollarSign size={18} />,
-                },
+                // {
+                //   href: "/dashboard/students",
+                //   label: "Students",
+                //   icon: <GraduationCap size={18} />,
+                // },
+                // {
+                //   href: "/dashboard/financials",
+                //   label: "Financials",
+                //   icon: <DollarSign size={18} />,
+                // },
               ].map((item, index) => (
                 <Link
                   key={item.href}

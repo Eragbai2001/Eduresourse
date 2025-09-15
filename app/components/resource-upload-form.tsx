@@ -22,6 +22,9 @@ import {
   File,
   ArrowRight,
   ArrowLeft,
+  Building2,
+  BookOpen,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -193,16 +196,19 @@ export function ResourceUploadForm() {
       )}
 
       {currentStep > 0 && (
-        <div className="min-h-[80vh] bg-[#F5F8FF] flex items-center justify-center p-8">
-          <div className="w-full max-w-6xl">
-            <div className="bg-[#FFB0E8] rounded-2xl shadow-xl overflow-hidden flex h-[700px]">
+        <div className="min-h-[80vh] bg-[#F5F8FF] flex items-center justify-center p-4 md:p-8">
+          <div
+            className="w-full max-w-6xl  
+           ">
+            <div className=" rounded-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] md:h-[700px]  bg-[#FFB0E8]">
               {/* Left side - Form content */}
-              <div className="flex-1 rounded-xl bg-white mr-2">
-                <div className="flex-1 p-12 overflow-y-auto flex flex-col justify-between h-full">
-                  <div className="mb-8">
-                    <div className="flex items-center  mb-6">
-                      <div className="w-12 h-12 rounded-full  flex items-center justify-center">
-                        <span className="text-5xl font-bold text-[#FFB0E8]">
+
+              <div className="flex-1 rounded-tr-2xl rounded-br-2xl bg-white">
+                <div className="flex-1 p-6 md:p-12 overflow-y-auto flex flex-col justify-between h-full min-h-[500px] md:min-h-full">
+                  <div className="mb-6 md:mb-8">
+                    <div className="flex items-center justify-center md:justify-start mb-4 md:mb-6">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center">
+                        <span className="text-3xl md:text-5xl font-bold text-[#FFB0E8]">
                           {currentStep}
                         </span>
                       </div>
@@ -215,10 +221,10 @@ export function ResourceUploadForm() {
                       {currentStep === 1 && (
                         <div className="space-y-8 text-center">
                           <div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                               Which department is this for?
                             </h2>
-                            <p className="text-gray-600 mb-8">
+                            <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8">
                               Select the academic department for your
                               educational resources
                             </p>
@@ -241,7 +247,7 @@ export function ResourceUploadForm() {
                                 }>
                                 <SelectTrigger
                                   id="department"
-                                  className="w-full h-14 text-lg border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] focus-visible:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors">
+                                  className="w-full h-14 text-lg border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] focus-visible:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors shadow-none">
                                   <SelectValue placeholder="Select department..." />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white   border-2 border-gray-200">
@@ -273,7 +279,7 @@ export function ResourceUploadForm() {
                                 }>
                                 <SelectTrigger
                                   id="level"
-                                  className="w-full h-14 text-lg border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] focus-visible:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors">
+                                  className="w-full h-14 text-lg border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] focus-visible:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors shadow-none">
                                   <SelectValue placeholder="Select level..." />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white   border-2 border-gray-200 ">
@@ -487,7 +493,7 @@ export function ResourceUploadForm() {
               </div>
 
               {/* Right side - Steps navigation (vertical sidebar) */}
-              <div className="w-48 bg-[#FFB0E8] h-full flex relative">
+              <div className="hidden md:flex w-48 bg-[#FFB0E8] h-full relative">
                 <div className="h-full flex w-full">
                   {steps
                     .filter((step) => step.number !== currentStep) // Hide current step
@@ -512,8 +518,8 @@ export function ResourceUploadForm() {
                         </div>
 
                         {/* Title - vertical */}
-                        <div className="flex-1 flex items-end justify-center pb-20">
-                          <div className="transform -rotate-90 origin-center Im text-xl font-medium text-white/90">
+                        <div className="flex-1 flex items-end justify-center pb-10">
+                          <div className="text-xl font-medium text-white whitespace-nowrap [writing-mode:vertical-rl] [text-orientation:mixed] rotate-180">
                             {step.title.toLowerCase()}
                           </div>
                         </div>
@@ -521,13 +527,13 @@ export function ResourceUploadForm() {
                         {/* Icon at bottom */}
                         <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center absolute bottom-4">
                           {step.number === 1 && (
-                            <FileText className="w-4 h-4 text-[#FFB0E8]" />
+                            <Building2 className="w-4 h-4 text-[#FFB0E8]" />
                           )}
                           {step.number === 2 && (
-                            <FileText className="w-4 h-4 text-[#FFB0E8]" />
+                            <BookOpen className="w-4 h-4 text-[#FFB0E8]" />
                           )}
                           {step.number === 3 && (
-                            <FileText className="w-4 h-4 text-[#FFB0E8]" />
+                            <Settings className="w-4 h-4 text-[#FFB0E8]" />
                           )}
                           {step.number === 4 && (
                             <Upload className="w-4 h-4 text-[#FFB0E8]" />
