@@ -166,7 +166,7 @@ export function ResourceUploadForm() {
     }
   };
   return (
-    <div className="min-h-[80vh] bg-[#F5F8FF] ">
+    <div className="min-h-[80vh] bg-[#F5F8FF]  font-hanken">
       {currentStep === 0 && (
         <div className="min-h-[80vh] flex items-center justify-center">
           <div className="text-center  mx-auto">
@@ -196,15 +196,13 @@ export function ResourceUploadForm() {
       )}
 
       {currentStep > 0 && (
-        <div className="min-h-[80vh] bg-[#F5F8FF] flex items-center justify-center p-4 md:p-8">
-          <div
-            className="w-full max-w-6xl  
-           ">
-            <div className=" rounded-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] md:h-[700px]  bg-[#FFB0E8]">
+        <div className="min-h-[80vh] md:min-h-[80vh] bg-[#F5F8FF] flex items-center justify-center p-2 md:p-8">
+          <div className="w-full max-w-[500px] sm:max-w-md md:max-w-6xl mx-auto">
+            <div className="rounded-xl md:rounded-2xl overflow-hidden flex flex-col md:flex-row  md:h-[700px] bg-[#FFB0E8]">
               {/* Left side - Form content */}
 
-              <div className="flex-1 rounded-tr-2xl rounded-br-2xl bg-white">
-                <div className="flex-1 p-6 md:p-12 overflow-y-auto flex flex-col justify-between h-full min-h-[500px] md:min-h-full">
+              <div className="flex-1 rounded-tr-2xl rounded-br-2xl md:rounded-tr-2xl md:rounded-br-2xl bg-white">
+                <div className="flex-1 p-4 md:p-6 lg:p-12 overflow-y-auto flex flex-col justify-between h-full min-h-[350px] md:min-h-[500px]">
                   <div className="mb-6 md:mb-8">
                     <div className="flex items-center justify-center md:justify-start mb-4 md:mb-6">
                       <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center">
