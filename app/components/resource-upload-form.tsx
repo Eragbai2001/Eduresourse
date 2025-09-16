@@ -198,7 +198,7 @@ export function ResourceUploadForm() {
       {currentStep > 0 && (
         <div className="min-h-[80vh] md:min-h-[80vh] bg-[#F5F8FF] flex items-center justify-center p-2 md:p-8">
           <div className="w-full max-w-[500px] sm:max-w-md md:max-w-6xl mx-auto">
-            <div className="rounded-xl md:rounded-2xl overflow-hidden flex flex-col md:flex-row  md:h-[700px] bg-[#FFB0E8]">
+            <div className="rounded-xl md:rounded-2xl overflow-hidden flex flex-col md:flex-row  md:h-[700px] md:bg-[#FFB0E8]">
               {/* Left side - Form content */}
 
               <div className="flex-1 rounded-tr-2xl rounded-br-2xl md:rounded-tr-2xl md:rounded-br-2xl bg-white">
