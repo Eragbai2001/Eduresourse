@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -25,9 +25,13 @@ import {
   Building2,
   BookOpen,
   Settings,
+  Trash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
+import { User } from "@supabase/supabase-js";
+import { toast, Toaster } from "sonner";
 
 interface FormData {
   department: string;
@@ -36,6 +40,7 @@ interface FormData {
   description: string;
   features: string[];
   resources: File[];
+  coverPhoto: File | null;
 }
 
 const levels = [
@@ -71,6 +76,8 @@ const availableFeatures = [
 ];
 
 export function ResourceUploadForm() {
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     department: "",
@@ -79,6 +86,7 @@ export function ResourceUploadForm() {
     description: "",
     features: [],
     resources: [],
+    coverPhoto: null,
   });
 
   const steps = [
@@ -91,6 +99,14 @@ export function ResourceUploadForm() {
     },
     { number: 4, title: " upload Resources", description: "Upload files" },
   ];
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data?.user || null);
+    };
+    fetchUser();
+  }, []);
 
   const handleNext = () => {
     if (currentStep < 4) {
@@ -117,8 +133,17 @@ export function ResourceUploadForm() {
     }));
   };
 
+  const MAX_FILE_SIZE_MB = 50;
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
+    const tooLarge = files.find(
+      (file) => file.size > MAX_FILE_SIZE_MB * 1024 * 1024
+    );
+    if (tooLarge) {
+      toast.error(`File "${tooLarge.name}" exceeds the 50MB limit.`);
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       resources: [...prev.resources, ...files],
@@ -130,6 +155,104 @@ export function ResourceUploadForm() {
       ...prev,
       resources: prev.resources.filter((_, i) => i !== index),
     }));
+  };
+
+  const handleSubmit = async () => {
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+    setLoading(true);
+    try {
+      // Upload cover photo if provided
+      let coverPhotoPath: string | null = null;
+      if (formData.coverPhoto) {
+        const { data: coverData, error: coverError } = await supabase.storage
+          .from("cover-photos")
+          .upload(
+            `covers/${user.id}/${Date.now()}-${formData.coverPhoto.name}`,
+            formData.coverPhoto
+          );
+
+        if (coverError) {
+          toast.error("Cover photo upload failed: " + coverError.message);
+          setLoading(false);
+          return;
+        }
+        coverPhotoPath = coverData.path;
+      }
+
+      // Upload files to Supabase Storage and collect their paths
+      const uploadedFiles: string[] = [];
+      for (const file of formData.resources) {
+        const { data, error } = await supabase.storage
+          .from("resources")
+          .upload(`resources/${user.id}/${Date.now()}-${file.name}`, file);
+
+        if (error) {
+          toast.error("File upload failed: " + error.message);
+          setLoading(false);
+          return;
+        }
+        uploadedFiles.push(data.path);
+      }
+
+      // Filter out the cover photo from resources (if user uploaded the same file as both)
+      const filteredResources = formData.resources.filter(
+        (file) =>
+          !(
+            formData.coverPhoto &&
+            file.name === formData.coverPhoto.name &&
+            file.size === formData.coverPhoto.size
+          )
+      );
+
+      // Prepare data for Prisma API
+      const dataToInsert = {
+        userId: user.id,
+        department: formData.department,
+        level: formData.level,
+        title: formData.title,
+        description: formData.description,
+        features: formData.features,
+        files: uploadedFiles,
+        coverPhoto: coverPhotoPath,
+        resourceCount: filteredResources.length, // number of files (excluding cover photo)
+        downloadCount: 0, // always 0 on creation
+      };
+
+      // Call your API route
+      const response = await fetch("/api/resources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToInsert),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        toast.error(
+          "Error saving data: " + (result.error || response.statusText)
+        );
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Resources uploaded successfully!");
+      setFormData({
+        department: "",
+        level: "",
+        title: "",
+        description: "",
+        features: [],
+        resources: [],
+        coverPhoto: null,
+      });
+      setCurrentStep(0);
+    } catch {
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFileIcon = (fileName: string) => {
@@ -163,6 +286,20 @@ export function ResourceUploadForm() {
         return formData.resources.length > 0;
       default:
         return false;
+    }
+  };
+
+  const handleCoverPhotoUpload = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      setFormData((prev) => ({
+        ...prev,
+        coverPhoto: file,
+      }));
+    } else {
+      toast.error("Please select an image file for the cover photo.");
     }
   };
   return (
@@ -298,8 +435,8 @@ export function ResourceUploadForm() {
 
                       {/* Step 2: Course Information */}
                       {currentStep === 2 && (
-                        <div className="space-y-8 text-center">
-                          <div>
+                        <div className="div">
+                          <div className="space-y-1 text-center">
                             <h2 className="text-3xl font-bold text-gray-900 mb-4">
                               Tell us about your course
                             </h2>
@@ -308,45 +445,163 @@ export function ResourceUploadForm() {
                               educational resources
                             </p>
                           </div>
-
-                          <div className="space-y-6 max-w-2xl mx-auto">
-                            <div>
-                              <Label
-                                htmlFor="title"
-                                className="text-base font-medium text-gray-700 mb-2 block">
-                                Course Title
+                          <div className="flex flex-col gap-8 md:gap-0 md:flex-row  items-start justify-start md:justify-center overflow-y-hidden ">
+                            {/* Right: Cover Photo Upload (Mobile) */}
+                            <div className="flex-1 max-w-sm md:pl-8 flex flex-col items-center md:items-end justify-center h-[220px] md:hidden">
+                              <Label className="text-base font-medium text-gray-700 mb-2 block">
+                                Cover Photo (optional)
                               </Label>
-                              <Input
-                                id="title"
-                                placeholder="e.g., Advanced Data Structures and Algorithms"
-                                value={formData.title}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    title: e.target.value,
-                                  }))
-                                }
-                                className="h-14 text-lg border-2 border-gray-200 rounded-xl !ring-0 !ring-offset-0 !focus-visible:ring-0 !focus-visible:ring-offset-0 !focus-visible:ring-transparent !focus-visible:border-gray-300 !focus:border-gray-300 !focus:outline-none !focus:ring-0 !focus:ring-offset-0 transition-colors focus:border-[#FFB0E8] "
-                              />
+                              <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-2 text-center hover:border-[#FFB0E8] transition-colors group h-[120px] w-[120px] flex items-center justify-center">
+                                {formData.coverPhoto ? (
+                                  <>
+                                    <Image
+                                      src={URL.createObjectURL(
+                                        formData.coverPhoto
+                                      )}
+                                      alt="Cover preview"
+                                      width={87}
+                                      height={87}
+                                      className="h-[87px] w-[87px] object-cover rounded-lg"
+                                      style={{ objectFit: "cover" }}
+                                      unoptimized // Needed for local blob URLs
+                                    />
+                                    {/* Trash button absolutely positioned */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          coverPhoto: null,
+                                        }));
+                                      }}
+                                      className="absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10 flex items-center"
+                                      aria-label="Remove cover photo">
+                                      <Trash className="w-4 h-4 text-red-500" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center h-full w-full">
+                                    <ImageIcon className="h-8 w-8 text-gray-400 group-hover:text-[#FFB0E8] mb-1 transition-colors" />
+                                    <p className="text-xs font-semibold text-gray-700">
+                                      Upload
+                                    </p>
+                                    <p className="text-[10px] text-gray-500">
+                                      JPG, PNG, GIF
+                                    </p>
+                                  </div>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleCoverPhotoUpload}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <Label
-                                htmlFor="description"
-                                className="text-base font-medium text-gray-700 mb-2 block">
-                                Course Description
-                              </Label>
-                              <Textarea
-                                id="description"
-                                placeholder="Describe what students will learn and what makes these resources valuable..."
-                                value={formData.description}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    description: e.target.value,
-                                  }))
-                                }
-                                className="min-h-[120px] text-base border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] transition-colors resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                              />
+                            {/* Left: Course Info */}
+                            <div className="flex-1 space-y-7 max-w-xl w-full  ">
+                              <div>
+                                <Label
+                                  htmlFor="title"
+                                  className="text-base font-medium text-gray-700 mb-2 block">
+                                  Course Title
+                                </Label>
+                                <Input
+                                  id="title"
+                                  placeholder="e.g., Advanced Data Structures and Algorithms"
+                                  value={formData.title}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      title: e.target.value,
+                                    }))
+                                  }
+                                  className="shadow-none   w-full h-14 text-lg border-2 border-gray-200 rounded-xl !ring-0 !ring-offset-0 !focus-visible:ring-0 !focus-visible:ring-offset-0 !focus-visible:ring-transparent !focus-visible:border-gray-300 !focus:border-gray-300 !focus:outline-none !focus:ring-0 !focus:ring-offset-0 transition-colors focus:border-[#FFB0E8] "
+                                />
+                              </div>
+                              <div>
+                                <Label
+                                  htmlFor="description"
+                                  className=" w-full text-base font-medium text-gray-700 mb-2 block">
+                                  Course Description
+                                </Label>
+                                <Textarea
+                                  id="description"
+                                  placeholder="Describe what students will learn and what makes these resources valuable..."
+                                  value={formData.description}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      description: e.target.value,
+                                    }))
+                                  }
+                                  className=" shadow-none min-h-[120px] text-base border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] transition-colors resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                />
+                              </div>
+                            </div>
+                            <div
+                              className="flex 
+                            ">
+                              {/* Right: Cover Photo Upload */}
+                              <div className="flex-1 max-w-sm mx-auto md:mx-0 md:ml-auto md:pl-8  flex-col items-center md:items-end justify-center h-[220px] hidden md:flex  ">
+                                <Label className="text-base font-medium text-gray-700 mb-2 w-full text-left">
+                                  Cover Photo (optional)
+                                </Label>
+                                <div
+                                  className={cn(
+                                    "relative rounded-xl p-2 text-center transition-colors group h-[160px] w-[160px] flex items-center justify-center  ",
+                                    formData.coverPhoto
+                                      ? "" // No border when image is selected
+                                      : "border-2 border-dashed border-gray-300 hover:border-[#FFB0E8] "
+                                  )}>
+                                  {formData.coverPhoto ? (
+                                    <>
+                                      <Image
+                                        src={URL.createObjectURL(
+                                          formData.coverPhoto
+                                        )}
+                                        alt="Cover preview"
+                                        width={87}
+                                        height={87}
+                                        className="h-[87px] w-[87px] object-cover rounded-lg"
+                                        style={{ objectFit: "cover" }}
+                                        unoptimized
+                                      />
+                                      {/* Trash button absolutely positioned */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            coverPhoto: null,
+                                          }));
+                                        }}
+                                        className="absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10 flex items-center"
+                                        aria-label="Remove cover photo">
+                                        <Trash className="w-4 h-4 text-red-500" />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <div className="flex flex-col items-center justify-center h-full w-full">
+                                      <ImageIcon className="h-8 w-8 text-gray-400 group-hover:text-[#FFB0E8] mb-1 transition-colors" />
+                                      <p className="text-xs font-semibold text-gray-700">
+                                        Upload
+                                      </p>
+                                      <p className="text-[10px] text-gray-500">
+                                        JPG, PNG, GIF
+                                      </p>
+                                    </div>
+                                  )}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleCoverPhotoUpload}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -477,13 +732,10 @@ export function ResourceUploadForm() {
                       </Button>
                     ) : (
                       <Button
-                        disabled={!isStepValid()}
-                        className="h-12 px-8 bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-gray-900 font-medium rounded-xl disabled:opacity-50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0"
-                        onClick={() => {
-                          console.log("Form submitted:", formData);
-                          alert("Resources uploaded successfully!");
-                        }}>
-                        Upload Resources
+                        disabled={!isStepValid() || loading}
+                        className="h-12 px-8 bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white/90  font-medium rounded-xl disabled:opacity-50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0 text-lg"
+                        onClick={handleSubmit}>
+                        {loading ? "Uploading..." : "Upload Resources"}
                       </Button>
                     )}
                   </div>
@@ -516,14 +768,14 @@ export function ResourceUploadForm() {
                         </div>
 
                         {/* Title - vertical */}
-                        <div className="flex-1 flex items-end justify-center pb-10">
-                          <div className="text-xl font-medium text-white whitespace-nowrap [writing-mode:vertical-rl] [text-orientation:mixed] rotate-180">
+                        <div className="flex-1 flex items-end justify-center pb-8">
+                          <div className="text-2xl font-medium text-white whitespace-nowrap [writing-mode:vertical-rl] [text-orientation:mixed] rotate-180">
                             {step.title.toLowerCase()}
                           </div>
                         </div>
 
                         {/* Icon at bottom */}
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center absolute bottom-4">
+                        <div className="w-10 h-10  rounded-full bg-white flex items-center justify-center absolute bottom-4">
                           {step.number === 1 && (
                             <Building2 className="w-4 h-4 text-[#FFB0E8]" />
                           )}

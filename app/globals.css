@@ -200,3 +200,14 @@ input:-webkit-autofill:active {
   background: rgb(243 244 246);
   /* Tailwind bg-gray-100 color */
 }
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

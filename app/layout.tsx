@@ -42,7 +42,7 @@ export default function RootLayout({
       <body
         className={`${hankenGrotesk.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>{children}</AuthProvider>
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
