@@ -6,13 +6,13 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  MessageSquare,
-  Calendar,
-  FileText,
+  // MessageSquare,
+  // Calendar,
+  // FileText,
   Bookmark,
   Users,
-  GraduationCap,
-  DollarSign,
+  // GraduationCap,
+  // DollarSign,
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";

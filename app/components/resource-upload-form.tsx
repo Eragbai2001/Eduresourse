@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 
 interface FormData {
   department: string;

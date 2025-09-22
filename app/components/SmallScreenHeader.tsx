@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import {
   X,
   LayoutDashboard,
-  MessageSquare,
-  Calendar,
-  FileText,
+  // MessageSquare,
+  // Calendar,
+  // FileText,
   Bookmark,
   Users,
-  GraduationCap,
-  DollarSign,
+  // GraduationCap,
+  // DollarSign,
   LogOut,
 } from "lucide-react";
 import Image from "next/image";
