@@ -4,6 +4,7 @@ import { Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const hankenGrotesk = Hanken_Grotesk({
   weight: ["400", "500", "600", "700"],
@@ -43,6 +44,7 @@ export default function RootLayout({
         className={`${hankenGrotesk.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>{children}</AuthProvider>
         <Toaster position="top-center" richColors />
+        <SpeedInsights />
       </body>
     </html>
   );
