@@ -8,6 +8,7 @@ const nextConfig = {
       "avatar.vercel.sh", // Vercel avatars
       "images.unsplash.com", // In case you use Unsplash for demo images
       "ui-avatars.com", // UI Avatars API for email signup users
+      "uqorqernrucnemhedswu.supabase.co", // Your Supabase project storage URL
     ],
   },
   // Fix for multiple lockfiles warning

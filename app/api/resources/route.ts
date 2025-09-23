@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
       features,
       files,
       coverPhoto,
+      coverColor,
       resourceCount,
+      viewCount,
       downloadCount,
     } = body;
 
@@ -27,16 +29,33 @@ export async function POST(req: NextRequest) {
         features,
         files,
         coverPhoto,
+        coverColor,
         resourceCount,
+        viewCount,
         downloadCount,
       },
     });
 
-    return Response.json(resource, { status: 201 });
+    return Response.json(resource, { status: 200 });
   } catch (error) {
     console.error(error);
     return Response.json(
       { error: "Failed to create resource" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const resources = await prisma.resource.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return Response.json(resources, { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return Response.json(
+      { error: "Failed to fetch resources" },
       { status: 500 }
     );
   }

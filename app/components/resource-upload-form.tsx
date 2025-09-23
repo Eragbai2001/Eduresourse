@@ -41,6 +41,7 @@ interface FormData {
   features: string[];
   resources: File[];
   coverPhoto: File | null;
+  coverColor: string;
 }
 
 const levels = [
@@ -79,6 +80,32 @@ export function ResourceUploadForm() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
+  const COVER_COLORS = [
+    "#F2BC33",
+    "#F9C952",
+    "#FFD365",
+    "#FFDC85",
+    "#FFE7A9",
+    "#FFEFC8",
+    "#FFEFC8",
+    "#FFF8E6",
+    "#F588D6",
+    "#FD98E",
+    "#FFB0E8",
+    "#FFC2ED",
+    "#FFD6F3",
+    "#FFE3F7",
+    "#FFEEFA",
+    "#9FB9EB",
+    "#B7CEF9",
+    "#BFD5FF",
+    "#CDDEFF",
+    "#DBE7FF",
+    "#E8F0FF",
+  ];
+  function getRandomCoverColor() {
+    return COVER_COLORS[Math.floor(Math.random() * COVER_COLORS.length)];
+  }
   const [formData, setFormData] = useState<FormData>({
     department: "",
     level: "",
@@ -87,6 +114,7 @@ export function ResourceUploadForm() {
     features: [],
     resources: [],
     coverPhoto: null,
+    coverColor: getRandomCoverColor(),
   });
 
   const steps = [
@@ -217,8 +245,9 @@ export function ResourceUploadForm() {
         features: formData.features,
         files: uploadedFiles,
         coverPhoto: coverPhotoPath,
-        resourceCount: filteredResources.length, // number of files (excluding cover photo)
-        downloadCount: 0, // always 0 on creation
+        coverColor: formData.coverColor, // Include the cover color
+        resourceCount: filteredResources.length,
+        downloadCount: 0,
       };
 
       // Call your API route
@@ -246,6 +275,7 @@ export function ResourceUploadForm() {
         features: [],
         resources: [],
         coverPhoto: null,
+        coverColor: getRandomCoverColor(),
       });
       setCurrentStep(0);
     } catch {
@@ -254,7 +284,6 @@ export function ResourceUploadForm() {
       setLoading(false);
     }
   };
-
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
     switch (extension) {
@@ -451,7 +480,18 @@ export function ResourceUploadForm() {
                               <Label className="text-base font-medium text-gray-700 mb-2 block">
                                 Cover Photo (optional)
                               </Label>
-                              <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-2 text-center hover:border-[#FFB0E8] transition-colors group h-[120px] w-[120px] flex items-center justify-center">
+                              <div
+                                className={cn(
+                                  "relative rounded-xl p-2 text-center transition-colors group h-[260px] w-[260px] flex items-center justify-center",
+                                  formData.coverPhoto
+                                    ? ""
+                                    : "border-2 border-dashed border-gray-300 hover:border-[#FFB0E8]"
+                                )}
+                                style={{
+                                  background: !formData.coverPhoto
+                                    ? formData.coverColor
+                                    : undefined,
+                                }}>
                                 {formData.coverPhoto ? (
                                   <>
                                     <Image
@@ -459,13 +499,13 @@ export function ResourceUploadForm() {
                                         formData.coverPhoto
                                       )}
                                       alt="Cover preview"
-                                      width={87}
-                                      height={87}
-                                      className="h-[87px] w-[87px] object-cover rounded-lg"
+                                      width={180}
+                                      height={180}
+                                      className="h-[180px] w-[180px] object-cover rounded-lg border-2 border-gray-300"
                                       style={{ objectFit: "cover" }}
-                                      unoptimized // Needed for local blob URLs
+                                      unoptimized
                                     />
-                                    {/* Trash button absolutely positioned */}
+                                    {/* Trash button */}
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -481,15 +521,11 @@ export function ResourceUploadForm() {
                                     </button>
                                   </>
                                 ) : (
-                                  <div className="flex flex-col items-center justify-center h-full w-full">
-                                    <ImageIcon className="h-8 w-8 text-gray-400 group-hover:text-[#FFB0E8] mb-1 transition-colors" />
-                                    <p className="text-xs font-semibold text-gray-700">
-                                      Upload
-                                    </p>
-                                    <p className="text-[10px] text-gray-500">
-                                      JPG, PNG, GIF
-                                    </p>
-                                  </div>
+                                  <span className="text-5xl font-bold text-white select-none">
+                                    {(formData.title || "TITLE")
+                                      .slice(0, 6)
+                                      .toUpperCase()}
+                                  </span>
                                 )}
                                 <input
                                   type="file"
@@ -515,6 +551,10 @@ export function ResourceUploadForm() {
                                     setFormData((prev) => ({
                                       ...prev,
                                       title: e.target.value,
+                                      // Only pick a new color if no cover photo is selected
+                                      coverColor: prev.coverPhoto
+                                        ? prev.coverColor
+                                        : getRandomCoverColor(),
                                     }))
                                   }
                                   className="shadow-none   w-full h-14 text-lg border-2 border-gray-200 rounded-xl !ring-0 !ring-offset-0 !focus-visible:ring-0 !focus-visible:ring-offset-0 !focus-visible:ring-transparent !focus-visible:border-gray-300 !focus:border-gray-300 !focus:outline-none !focus:ring-0 !focus:ring-offset-0 transition-colors focus:border-[#FFB0E8] "
@@ -550,11 +590,16 @@ export function ResourceUploadForm() {
                                 </Label>
                                 <div
                                   className={cn(
-                                    "relative rounded-xl p-2 text-center transition-colors group h-[160px] w-[160px] flex items-center justify-center  ",
+                                    "relative rounded-xl p-2 text-center transition-colors group h-[260px] w-[260px] flex items-center justify-center",
                                     formData.coverPhoto
-                                      ? "" // No border when image is selected
-                                      : "border-2 border-dashed border-gray-300 hover:border-[#FFB0E8] "
-                                  )}>
+                                      ? ""
+                                      : " hover:border-[#FFB0E8]"
+                                  )}
+                                  style={{
+                                    background: !formData.coverPhoto
+                                      ? formData.coverColor
+                                      : undefined,
+                                  }}>
                                   {formData.coverPhoto ? (
                                     <>
                                       <Image
@@ -562,13 +607,13 @@ export function ResourceUploadForm() {
                                           formData.coverPhoto
                                         )}
                                         alt="Cover preview"
-                                        width={87}
-                                        height={87}
-                                        className="h-[87px] w-[87px] object-cover rounded-lg"
+                                        width={180}
+                                        height={180}
+                                        className="h-[180px] w-[180px] object-cover rounded-lg border-2 border-gray-300"
                                         style={{ objectFit: "cover" }}
                                         unoptimized
                                       />
-                                      {/* Trash button absolutely positioned */}
+                                      {/* Trash button */}
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -584,15 +629,11 @@ export function ResourceUploadForm() {
                                       </button>
                                     </>
                                   ) : (
-                                    <div className="flex flex-col items-center justify-center h-full w-full">
-                                      <ImageIcon className="h-8 w-8 text-gray-400 group-hover:text-[#FFB0E8] mb-1 transition-colors" />
-                                      <p className="text-xs font-semibold text-gray-700">
-                                        Upload
-                                      </p>
-                                      <p className="text-[10px] text-gray-500">
-                                        JPG, PNG, GIF
-                                      </p>
-                                    </div>
+                                    <span className="text-5xl font-bold text-white select-none">
+                                      {(formData.title || "TITLE")
+                                        .slice(0, 6)
+                                        .toUpperCase()}
+                                    </span>
                                   )}
                                   <input
                                     type="file"
@@ -672,8 +713,20 @@ export function ResourceUploadForm() {
                                 type="file"
                                 multiple
                                 onChange={handleFileUpload}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                disabled={loading}
+                                className={cn(
+                                  "absolute inset-0 w-full h-full opacity-0 cursor-pointer",
+                                  loading && "cursor-not-allowed"
+                                )}
                               />
+                              {/* Optional: Overlay to show disabled state */}
+                              {loading && (
+                                <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-xl">
+                                  <span className="text-lg font-semibold text-gray-400">
+                                    Uploading...
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             {formData.resources.length > 0 && (

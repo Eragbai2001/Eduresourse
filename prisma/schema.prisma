@@ -20,8 +20,10 @@ model Resource {
   features    String[]
   files       String[]
   coverPhoto    String?
+  coverColor   String?
   resourceCount Int      @default(0) 
   downloadCount Int      @default(0) 
+  viewCount     Int      @default(0) 
   createdAt   DateTime @default(now())
 
   @@schema("public")

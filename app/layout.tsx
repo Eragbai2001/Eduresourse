@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import NextTopLoader from "nextjs-toploader";
 
 const hankenGrotesk = Hanken_Grotesk({
   weight: ["400", "500", "600", "700"],
@@ -45,6 +46,17 @@ export default function RootLayout({
         <AuthProvider>{children}</AuthProvider>
         <Toaster position="top-center" richColors />
         <SpeedInsights />
+
+        <NextTopLoader
+          color="#FFC2ED"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={5}
+          crawl={true}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #FFC2ED, 0 0 5px #FFC2ED"
+        />
       </body>
     </html>
   );

@@ -61,7 +61,6 @@ export default function DashboardLayout({
         crawlSpeed={200}
         height={5}
         crawl={true}
-        showSpinner={true}
         easing="ease"
         speed={200}
         shadow="0 0 10px #FFC2ED, 0 0 5px #FFC2ED"
