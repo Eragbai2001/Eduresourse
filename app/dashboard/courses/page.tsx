@@ -1,19 +1,23 @@
 "use client";
 import CustomDropdown from "@/app/components/CustomDropdown";
+// Import your skeleton components
 import React, { useEffect, useState } from "react";
 import {
-  CircleDot,
   CirclePlay,
-  Clock,
   FileSpreadsheet,
   FileText,
-  Users,
   Search,
   File,
+  BookOpen,
+  DownloadCloud,
 } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
+import {
+  SkeletonCourseCard,
+  SkeletonCourseDetail,
+} from "@/app/components/SkeletonCourse";
 
 // Function to get color based on course level
 const getLevelColor = (level: string) => {
@@ -51,17 +55,24 @@ export default function CoursesPage() {
     enrolled?: number;
     createdAt: string;
   }
-  // State to track the selected course
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null); // Default to Business Analytics course
+
+  // Loading states
+  const [isCoursesLoading, setIsCoursesLoading] = useState(true);
+  const [isSelectedCourseLoading, setIsSelectedCourseLoading] = useState(true);
+
+  // Existing state
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeTab, setActiveTab] = useState("All");
-  const [activeLevel, setActiveLevel] = useState("All Levels"); // Default level filter
-  const [activeDepartment, setActiveDepartment] = useState("All Departments"); // Default department filter
+  const [activeLevel, setActiveLevel] = useState("All Levels");
+  const [activeDepartment, setActiveDepartment] = useState("All Departments");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [signedUrls, setSignedUrls] = useState<string[]>([]);
+
   const now = new Date();
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(now.getFullYear() - 1);
+
   const departments = React.useMemo(
     () => [
       "All Departments",
@@ -71,39 +82,102 @@ export default function CoursesPage() {
     ],
     [courses]
   );
+
   const levels = React.useMemo(
     () => ["All Levels", ...Array.from(new Set(courses.map((c) => c.level)))],
     [courses]
   );
+
   const params = useParams();
   const router = useRouter();
 
   useEffect(() => {
+    let mounted = true;
     async function fetchSignedUrls() {
-      if (!selectedCourse?.files) return;
-      const urls = await Promise.all(
+      setSignedUrls([]); // reset while loading
+      if (!selectedCourse?.files || selectedCourse.files.length === 0) return;
+
+      const results = await Promise.allSettled(
         selectedCourse.files.map(async (filePath: string) => {
-          // Remove leading "resources/" if present
-          const cleanPath = filePath.replace(/^resources\//, "");
-          const { data } = await supabase.storage
-            .from("resources")
-            .createSignedUrl(cleanPath, 60 * 60); // 1 hour expiry
-          return data?.signedUrl || "";
+          try {
+            const cleanPath = filePath.replace(/^resources\//, "");
+            console.log("DB path:", filePath, " → Clean path:", cleanPath);
+
+            const { data: publicData } = supabase.storage
+              .from("resources")
+              .getPublicUrl(cleanPath);
+
+            if (publicData?.publicUrl) return publicData.publicUrl;
+
+            // fallback for private buckets
+            const { data, error } = await supabase.storage
+              .from("resources")
+              .createSignedUrl(cleanPath, 60 * 60);
+
+            if (error) {
+              console.error("createSignedUrl error", {
+                filePath,
+                cleanPath,
+                error,
+              });
+              return "";
+            }
+
+            return data?.signedUrl || "";
+          } catch (err) {
+            console.error("signed url generation error", { filePath, err });
+            return "";
+          }
         })
+      );
+
+      // Debugging block — runs once per fetchSignedUrls call
+      console.log("📝 Debugging file paths...");
+      if (selectedCourse && selectedCourse.files) {
+        selectedCourse.files.forEach((filePath: string) => {
+          console.log("Raw DB path:", filePath);
+
+          const { data: pub } = supabase.storage
+            .from("resources")
+            .getPublicUrl(filePath);
+          console.log("Generated public URL:", pub?.publicUrl);
+
+          // also try createSignedUrl and log result (non-blocking)
+          supabase.storage
+            .from("resources")
+            .createSignedUrl(filePath, 60)
+            .then((res) => {
+              console.log(
+                "Generated signed URL:",
+                res.data?.signedUrl,
+                "Error:",
+                res.error
+              );
+            })
+            .catch((e) => {
+              console.error("createSignedUrl (debug) error", { filePath, e });
+            });
+        });
+      }
+
+      if (!mounted) return;
+      const urls = results.map((r) =>
+        r.status === "fulfilled" ? (r.value as string) : ""
       );
       setSignedUrls(urls);
     }
+
     fetchSignedUrls();
+    return () => {
+      mounted = false;
+    };
   }, [selectedCourse]);
 
-  // Refs for dropdown containers
   const mobileDropdownRef = React.useRef<HTMLDivElement>(null);
   const desktopDropdownRef = React.useRef<HTMLDivElement>(null);
 
-  // Effect to handle click outside dropdown
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Check if click is outside both dropdowns
       const clickedOutsideMobile =
         mobileDropdownRef.current &&
         !mobileDropdownRef.current.contains(event.target as Node);
@@ -123,26 +197,39 @@ export default function CoursesPage() {
 
   // Fetch courses from API
   useEffect(() => {
+    setIsCoursesLoading(true);
     fetch("/api/resources")
       .then((res) => res.json())
       .then((data) => {
-        // If your API returns { data: [...] }, use data.data
         setCourses(Array.isArray(data) ? data : []);
+        setIsCoursesLoading(false);
+      })
+      .catch(() => {
+        setIsCoursesLoading(false);
       });
   }, []);
 
   useEffect(() => {
     if (params?.id) {
+      setIsSelectedCourseLoading(true);
       fetch(`/api/resources/${params.id}`)
         .then((res) => res.json())
-        .then(setSelectedCourse);
-    } else if (courses.length > 0) {
-      // Default to first course OR show null for "select a course"
+        .then((data) => {
+          setSelectedCourse(data);
+          setIsSelectedCourseLoading(false);
+        })
+        .catch(() => {
+          setIsSelectedCourseLoading(false);
+        });
+    } else if (courses.length > 0 && !isCoursesLoading) {
+      // When courses are loaded and no specific course ID, select first course
       setSelectedCourse(courses[0]);
+      setIsSelectedCourseLoading(false);
+    } else if (!isCoursesLoading && courses.length === 0) {
+      // No courses available
+      setIsSelectedCourseLoading(false);
     }
-  }, [params?.id, courses]);
-
-
+  }, [params?.id, courses, isCoursesLoading]);
 
   // Filter courses based on active tab, department, and level
   const filteredCourses = courses
@@ -169,13 +256,12 @@ export default function CoursesPage() {
     oneYearAgo.setFullYear(now.getFullYear() - 1);
     return created >= oneYearAgo ? "Recent" : "Old";
   }
-  
+
   return (
     <div className="h-full w-full bg-[#F5F8FF] flex flex-col lg:flex-row lg:justify-between gap-4 font-hanken">
       {/* Left side - Courses list */}
-      <div className="bg-[#F5F8FF]   w-full  mb-4 lg:mb-0 h-full ">
+      <div className="bg-[#F5F8FF] w-full mb-4 lg:mb-0 h-full">
         {/* Simple tab filter */}
-
         <div className="flex items-center justify-between mb-6">
           {/* Tab filters */}
           <div className="bg-white rounded-xl flex h-10">
@@ -203,7 +289,8 @@ export default function CoursesPage() {
                 <Search size={20} stroke="#2E3135" strokeWidth={1.5} />
               </button>
             </div>
-            {/* Menu icon for mobile - replaced with dropdown */}
+
+            {/* Menu icon for mobile */}
             <div className="block md:hidden">
               <div className="relative" ref={mobileDropdownRef}>
                 <button
@@ -220,8 +307,7 @@ export default function CoursesPage() {
                 {mobileFiltersOpen && (
                   <div
                     className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3"
-                    onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
-                  >
+                    onClick={(e) => e.stopPropagation()}>
                     <CustomDropdown
                       options={departments}
                       defaultOption={activeDepartment}
@@ -235,8 +321,9 @@ export default function CoursesPage() {
                   </div>
                 )}
               </div>
-            </div>{" "}
-            {/* Dropdown for desktop - using mobile style */}
+            </div>
+
+            {/* Dropdown for desktop */}
             <div className="hidden md:block">
               <div className="relative" ref={desktopDropdownRef}>
                 <button
@@ -253,8 +340,7 @@ export default function CoursesPage() {
                 {mobileFiltersOpen && (
                   <div
                     className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3"
-                    onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
-                  >
+                    onClick={(e) => e.stopPropagation()}>
                     <CustomDropdown
                       options={departments}
                       defaultOption={activeDepartment}
@@ -272,117 +358,128 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {/* Course list */}
-
-        <div className="space-y-8  ">
-          {filteredCourses.map((course) => (
-            <div
-              key={course.id}
-              className={`px-4 py-3 border rounded-xl cursor-pointer w-full ${
-                selectedCourse?.id === course.id
-                  ? "border-2 border-[#FFB0E8] bg-white"
-                  : "border-none hover:bg-gray-50 bg-white"
-              }`}
-              onClick={() => {
-                setSelectedCourse(course);
-                router.push(`/dashboard/courses?courseId=${course.id}`);
-              }}>
-              {/* Flex container for main content */}
-              <div className="flex items-start w-full gap-2 ">
+        {/* Course list with skeleton loading */}
+        <div className="space-y-8">
+          {isCoursesLoading
+            ? // Show skeleton cards while loading
+              [...Array(5)].map((_, index) => (
+                <SkeletonCourseCard key={index} />
+              ))
+            : // Show actual courses
+              filteredCourses.map((course) => (
                 <div
-                  className="h-[87px] w-[87px] rounded-xl flex items-center justify-center "
-                  style={{
-                    background: !course.coverPhoto
-                      ? course.coverColor
-                      : undefined,
-                    position: "relative",
-                    overflow: "hidden",
+                  key={course.id}
+                  className={`px-4 py-3 border rounded-xl cursor-pointer w-full ${
+                    selectedCourse?.id === course.id
+                      ? "border-2 border-[#FFB0E8] bg-white"
+                      : "border-none hover:bg-gray-50 bg-white"
+                  }`}
+                  onClick={() => {
+                    setSelectedCourse(course);
+                    router.push(`/dashboard/courses?courseId=${course.id}`);
                   }}>
-                  {course.coverPhoto ? (
-                    <Image
-                      src={
-                        supabase.storage
-                          .from("cover-photos")
-                          .getPublicUrl(course.coverPhoto).data.publicUrl
-                      }
-                      alt={course.title}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <span className="text-2xl font-bold text-white select-none">
-                      {(course.title || "TITLE").slice(0, 6).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-grow ml-5">
-                  {/* Category and level */}
-                  <div className="flex text-sm items-center">
-                    <span className="text-[#8D8F91] text-[12px]">
-                      {course.department}
-                    </span>
-                    <span className="mx-2 text-gray-300">•</span>
-                    <span
-                      className="text-[12px]"
-                      style={{ color: getLevelColor(course.level) }}>
-                      {course.level}
-                    </span>
+                  {/* Flex container for main content */}
+                  <div className="flex items-start w-full gap-2">
+                    <div
+                      className="h-[87px] w-[87px] rounded-xl flex items-center justify-center"
+                      style={{
+                        background: !course.coverPhoto
+                          ? course.coverColor
+                          : undefined,
+                        position: "relative",
+                        overflow: "hidden",
+                      }}>
+                      {course.coverPhoto ? (
+                        <Image
+                          src={
+                            supabase.storage
+                              .from("cover-photos")
+                              .getPublicUrl(course.coverPhoto).data.publicUrl
+                          }
+                          alt={course.title}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <span className="text-2xl font-bold text-white select-none">
+                          {(course.title || "TITLE").slice(0, 6).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-grow ml-5">
+                      {/* Category and level */}
+                      <div className="flex text-sm items-center">
+                        <span className="text-[#8D8F91] text-[12px]">
+                          {course.department}
+                        </span>
+                        <span className="mx-2 text-gray-300">•</span>
+                        <span
+                          className="text-[12px]"
+                          style={{ color: getLevelColor(course.level) }}>
+                          {course.level}
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="font-semibold text-[#2E3135] text-[18px]">
+                        {course.title}
+                      </h3>
+
+                      {/* Stats for desktop and tablet */}
+                      <div className="hidden md:flex items-center text-xs text-gray-500 mt-4">
+                        <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                          <BookOpen size={14} className="mr-1 text-gray-400" />
+                          {course.resourceCount}
+                          <span className="text-[#8D8F91] ml-1">resources</span>
+                        </span>
+
+                        <span className="flex items-center text-[#2E3135] font-semibold">
+                          <DownloadCloud
+                            size={14}
+                            className="mr-1 text-gray-400"
+                          />
+                          {course.downloadCount}
+                          <span className="text-[#8D8F91] ml-1">
+                            downloaded
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Title */}
-                  <h3 className="font-semibold text-[#2E3135] text-[18px]">
-                    {course.title}
-                  </h3>
-
-                  {/* Stats for desktop and tablet */}
-                  <div className="hidden md:flex items-center text-xs text-gray-500 mt-4">
+                  {/* Mobile stats in their own block below the main content */}
+                  <div className="md:hidden w-full flex items-center text-xs text-gray-500 mt-4 pt-3 pl-1 border-t-2 border-gray-100">
                     <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
-                      <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
-                      {course.resourceCount}{" "}
+                      <BookOpen size={14} className="mr-1 text-gray-400" />
+                      {course.resourceCount}
                       <span className="text-[#8D8F91] ml-1">resources</span>
                     </span>
 
-                    <span className="flex items-center text-[#2E3135] font-semibold ">
-                      <Users size={14} className="mr-1 text-gray-400 " />{" "}
-                      {course.enrolled}{" "}
-                      <span className="text-[#8D8F91] ml-1">Enrolled</span>
+                    <span className="flex items-center text-[#2E3135] font-semibold">
+                      <DownloadCloud size={14} className="mr-1 text-gray-400" />
+                      {course.downloadCount}
+                      <span className="text-[#8D8F91] ml-1">downloaded</span>
                     </span>
                   </div>
                 </div>
-              </div>
-
-              {/* Mobile stats in their own block below the main content */}
-              <div className="md:hidden w-full flex items-center text-xs text-gray-500 mt-4 pt-3 pl-1  border-t-2 border-gray-100">
-                <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
-                  <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
-                  {course.lessons}
-                </span>
-                <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
-                  <Clock size={14} className="mr-1 text-gray-400" />{" "}
-                  {course.hours}
-                </span>
-                <span className="flex items-center text-[#2E3135] font-semibold">
-                  <Users size={14} className="mr-1 text-gray-400" />{" "}
-                  {course.enrolled}
-                </span>
-              </div>
-            </div>
-          ))}
+              ))}
         </div>
       </div>
 
-      {/* Right side - Course description */}
-      <div className="bg-white rounded-xl   w-full  lg:ml-auto h-fit p-4">
-        {selectedCourse ? (
+      {/* Right side - Course description with skeleton loading */}
+      <div className="bg-white rounded-xl w-full lg:ml-auto h-fit p-4">
+        {isSelectedCourseLoading || isCoursesLoading ? (
+          <SkeletonCourseDetail />
+        ) : selectedCourse ? (
           <div>
-            <div className="mb-4   ">
+            <div className="mb-4">
               <div className="text-[17px] text-[#8D8F91] flex items-center">
-                {selectedCourse.department}{" "}
+                {selectedCourse.department}
                 <span className="mx-2 text-gray-300 text-sm">•</span>
                 <span style={{ color: getLevelColor(selectedCourse.level) }}>
                   {selectedCourse.level}
                 </span>
-                <span className="text-xs text-gray-400  pl-3">
+                <span className="text-xs text-gray-400 pl-3">
                   Created:{" "}
                   {new Date(selectedCourse.createdAt).toLocaleDateString()}
                 </span>
@@ -425,31 +522,16 @@ export default function CoursesPage() {
                   </span>
                 </span>
 
-                {/* Lessons count */}
-                <span className="flex items-center mr-3">
-                  <CircleDot size={14} className="mr-1 text-gray-400" />{" "}
-                  <span className="text-[#2E3135] font-semibold mr-1">
-                    {selectedCourse.lessons}{" "}
-                  </span>{" "}
-                  Lessons
+                <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                  <BookOpen size={14} className="mr-1 text-gray-400" />
+                  {selectedCourse.resourceCount}{" "}
+                  <span className="text-[#8D8F91] ml-1">resources</span>
                 </span>
 
-                {/* Hours count */}
-                <span className="flex items-center mr-3">
-                  <Clock size={14} className="mr-1 text-gray-400" />{" "}
-                  <span className="text-[#2E3135] font-semibold mr-1">
-                    {selectedCourse.hours}{" "}
-                  </span>{" "}
-                  Hours
-                </span>
-
-                {/* Enrolled count */}
-                <span className="flex items-center">
-                  <Users size={14} className="mr-1 text-gray-400" />{" "}
-                  <span className="text-[#2E3135] font-semibold mr-1">
-                    {selectedCourse.enrolled}{" "}
-                  </span>{" "}
-                  Enrolled
+                <span className="flex items-center text-[#2E3135] font-semibold ">
+                  <DownloadCloud size={14} className="mr-1 text-gray-400" />
+                  {selectedCourse.downloadCount}{" "}
+                  <span className="text-[#8D8F91] ml-1">downloaded</span>
                 </span>
               </div>
             </div>
@@ -484,7 +566,7 @@ export default function CoursesPage() {
               <h3 className="font-semibold mb-1 text-[16px] text-[#2E3135]">
                 About Course
               </h3>
-              <p className="text-[14px] text-[#797B7E] ">
+              <p className="text-[14px] text-[#797B7E]">
                 {selectedCourse.description}
               </p>
             </div>
@@ -520,7 +602,7 @@ export default function CoursesPage() {
                       ? timestampMatch[1]
                       : fullFilename;
 
-                    // File type logic (same as before)
+                    // File type logic
                     const extension = displayName
                       .split(".")
                       .pop()
@@ -538,9 +620,6 @@ export default function CoursesPage() {
                         ? "excel"
                         : "file";
 
-                    // Use the signed URL from state
-                    const url = signedUrls[index];
-
                     return (
                       <div key={index} className="flex items-center">
                         <div className="w-[12px] h-[12px] mr-3 text-gray-400">
@@ -557,20 +636,44 @@ export default function CoursesPage() {
                             <File size={18} className="text-[#797B7E]" />
                           )}
                         </div>
-                        <a
-                          href={url}
-                          download={displayName}
-                          target="_blank"
-                          rel="noopener noreferrer"
+
+                        {/* Generate signed URL on click instead of prefetching */}
+                        <button
                           onClick={async () => {
+                            // Ensure path matches your bucket structure
+                            const cleanPath = filePath.startsWith("resources/")
+                              ? filePath
+                              : `resources/${filePath}`;
+
+                            const { data, error } = await supabase.storage
+                              .from("resources")
+                              .createSignedUrl(cleanPath, 60 * 60); // 1 hour expiry
+
+                            if (error) {
+                              console.error(
+                                "Error creating signed URL:",
+                                error
+                              );
+                              return;
+                            }
+
+                            // Increment download count
                             await fetch(
                               `/api/resources/${selectedCourse.id}/increment-download`,
                               { method: "POST" }
                             );
+
+                            // Trigger download
+                            const link = document.createElement("a");
+                            link.href = data.signedUrl;
+                            link.download = displayName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
                           }}
-                          className="text-sm text-[#9FB9EB] hover:underline cursor-pointer truncate">
+                          className="text-sm text-[#9FB9EB] hover:underline cursor-pointer truncate text-left">
                           {displayName}
-                        </a>
+                        </button>
                       </div>
                     );
                   }

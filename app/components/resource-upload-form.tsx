@@ -90,7 +90,7 @@ export function ResourceUploadForm() {
     "#FFEFC8",
     "#FFF8E6",
     "#F588D6",
-    "#FD98E",
+    "#FD98E0",
     "#FFB0E8",
     "#FFC2ED",
     "#FFD6F3",
@@ -199,7 +199,10 @@ export function ResourceUploadForm() {
           .from("cover-photos")
           .upload(
             `covers/${user.id}/${Date.now()}-${formData.coverPhoto.name}`,
-            formData.coverPhoto
+            formData.coverPhoto,
+            {
+              contentType: formData.coverPhoto.type, // 👈 ensures it's treated as image/jpeg or png
+            }
           );
 
         if (coverError) {
@@ -215,7 +218,9 @@ export function ResourceUploadForm() {
       for (const file of formData.resources) {
         const { data, error } = await supabase.storage
           .from("resources")
-          .upload(`resources/${user.id}/${Date.now()}-${file.name}`, file);
+          .upload(`resources/${user.id}/${Date.now()}-${file.name}`, file, {
+            contentType: file.type, // 👈 This ensures proper MIME type is set
+          });
 
         if (error) {
           toast.error("File upload failed: " + error.message);
