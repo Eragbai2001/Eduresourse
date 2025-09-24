@@ -55,6 +55,13 @@ export default function CoursesPage() {
     enrolled?: number;
     createdAt: string;
   }
+  interface Profile {
+    user_id: string;
+    display_name?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null; // may be a URL or a storage path
+    email?: string | null;
+  }
 
   // Loading states
   const [isCoursesLoading, setIsCoursesLoading] = useState(true);
@@ -68,6 +75,10 @@ export default function CoursesPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [signedUrls, setSignedUrls] = useState<string[]>([]);
+  const [uploader, setUploader] = useState<Profile | null>(null);
+  const [uploaderAvatarUrl, setUploaderAvatarUrl] = useState<string | null>(
+    null
+  );
 
   const now = new Date();
   const oneYearAgo = new Date();
@@ -168,6 +179,47 @@ export default function CoursesPage() {
     }
 
     fetchSignedUrls();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchUploader() {
+      setUploader(null);
+      setUploaderAvatarUrl(null);
+
+      if (!selectedCourse?.userId) return;
+
+      try {
+        // Call our server endpoint which returns profile + resolved avatarPublicUrl
+        const res = await fetch(`/api/profiles/${selectedCourse.userId}`);
+        if (!res.ok) {
+          let body = null;
+          try {
+            body = await res.json();
+          } catch (e) {
+            body = await res.text();
+          }
+          console.error("Error fetching uploader profile:", body);
+          return;
+        }
+
+        const payload = await res.json();
+        const profile = payload?.profile ?? null;
+        const avatarPublicUrl = payload?.avatarPublicUrl ?? null;
+
+        if (!profile) return;
+        if (!mounted) return;
+        setUploader(profile);
+        if (avatarPublicUrl) setUploaderAvatarUrl(avatarPublicUrl);
+      } catch (e) {
+        console.error("fetchUploader error:", e);
+      }
+    }
+
+    fetchUploader();
     return () => {
       mounted = false;
     };
@@ -560,6 +612,38 @@ export default function CoursesPage() {
                   {(selectedCourse.title || "TITLE").slice(0, 6).toUpperCase()}
                 </span>
               )}
+            </div>
+
+            <div className="mt-3 flex items-center space-x-3 mb-3 ">
+              {uploaderAvatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={uploaderAvatarUrl}
+                  alt={
+                    uploader?.full_name ?? uploader?.display_name ?? "Uploader"
+                  }
+                  width={40}
+                  height={40}
+                  className="rounded-full w-10 h-10 object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center font-semibold">
+                  {(
+                    (uploader?.display_name ?? uploader?.full_name ?? uploader?.email) ||
+                    (selectedCourse?.userId ?? "U")
+                  )
+                    .toString()
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+              )}
+
+              <div>
+                <div className="text-sm font-medium text-[#2E3135]">
+                  {uploader?.full_name ?? uploader?.display_name ?? uploader?.email ?? "Uploader"}
+                </div>
+                
+              </div>
             </div>
 
             <div className="mb-4">

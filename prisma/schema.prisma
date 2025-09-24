@@ -28,3 +28,18 @@ model Resource {
 
   @@schema("public")
 }
+
+model Profile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid @map("user_id")
+  username    String?  @map("username")
+  fullName    String?  @map("full_name")
+  avatarUrl   String?  @map("avatar_url")
+  displayName String?  @map("display_name")
+  email       String?  @map("email")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@schema("public")
+  @@map("profiles")
+}
