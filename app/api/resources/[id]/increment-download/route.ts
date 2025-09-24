@@ -11,7 +11,10 @@ export async function POST(req: NextRequest) {
     const id = resourcesIndex !== -1 ? parts[resourcesIndex + 1] : undefined;
 
     if (!id) {
-      return NextResponse.json({ error: "Missing resource id" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing resource id" },
+        { status: 400 }
+      );
     }
 
     await prisma.resource.update({
@@ -22,7 +25,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("increment-download error:", err);
-    return NextResponse.json({ error: "Failed to increment download count" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to increment download count" },
+      { status: 500 }
+    );
   }
 }
-
