@@ -629,7 +629,9 @@ export default function CoursesPage() {
               ) : (
                 <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center font-semibold">
                   {(
-                    (uploader?.display_name ?? uploader?.full_name ?? uploader?.email) ||
+                    (uploader?.display_name ??
+                      uploader?.full_name ??
+                      uploader?.email) ||
                     (selectedCourse?.userId ?? "U")
                   )
                     .toString()
@@ -640,9 +642,11 @@ export default function CoursesPage() {
 
               <div>
                 <div className="text-sm font-medium text-[#2E3135]">
-                  {uploader?.full_name ?? uploader?.display_name ?? uploader?.email ?? "Uploader"}
+                  {uploader?.full_name ??
+                    uploader?.display_name ??
+                    uploader?.email ??
+                    "Uploader"}
                 </div>
-                
               </div>
             </div>
 

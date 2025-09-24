@@ -20,9 +20,13 @@ export async function GET(req: NextRequest) {
       LIMIT 1
     `;
 
-    const row = (rows?.[0] ?? null) as
-      | { user_id: string; display_name?: string; full_name?: string; avatar_url?: string; email?: string }
-      | null;
+    const row = (rows?.[0] ?? null) as {
+      user_id: string;
+      display_name?: string;
+      full_name?: string;
+      avatar_url?: string;
+      email?: string;
+    } | null;
 
     // If no profile row, try to fetch from Supabase Auth (admin) using service role
     if (!row) {
@@ -38,12 +42,20 @@ export async function GET(req: NextRequest) {
           // Use admin API to get user by id. If method is unavailable, fall back to REST
           let authUser: unknown = null;
           // Use REST admin endpoint to fetch user metadata
-          const res = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
-            headers: { Authorization: `Bearer ${serviceRoleKey}` },
-          });
+          const res = await fetch(
+            `${supabaseUrl}/auth/v1/admin/users/${userId}`,
+            {
+              headers: { Authorization: `Bearer ${serviceRoleKey}` },
+            }
+          );
           if (res.ok) authUser = await res.json();
 
-          function isAuthUser(obj: unknown): obj is { email?: string; user_metadata?: Record<string, unknown> } {
+          function isAuthUser(
+            obj: unknown
+          ): obj is {
+            email?: string;
+            user_metadata?: Record<string, unknown>;
+          } {
             return typeof obj === "object" && obj !== null && "email" in obj;
           }
 
@@ -51,11 +63,13 @@ export async function GET(req: NextRequest) {
             // Map auth user fields to normalized profile shape
             const metadata = authUser.user_metadata ?? {};
             const display =
-              (typeof metadata.display_name === "string" && metadata.display_name) ||
+              (typeof metadata.display_name === "string" &&
+                metadata.display_name) ||
               (typeof metadata.full_name === "string" && metadata.full_name) ||
               (typeof authUser.email === "string" ? authUser.email : null);
             const avatar =
-              (typeof metadata.avatar_url === "string" && metadata.avatar_url) ||
+              (typeof metadata.avatar_url === "string" &&
+                metadata.avatar_url) ||
               (typeof metadata.avatar === "string" && metadata.avatar) ||
               null;
 
@@ -73,10 +87,14 @@ export async function GET(req: NextRequest) {
               avatarPublicUrl = avatar;
             } else if (avatar) {
               try {
-                const { data: pub } = admin.storage.from("cover-photos").getPublicUrl(avatar);
+                const { data: pub } = admin.storage
+                  .from("cover-photos")
+                  .getPublicUrl(avatar);
                 if (pub?.publicUrl) avatarPublicUrl = pub.publicUrl;
                 else {
-                  const { data: signed } = await admin.storage.from("cover-photos").createSignedUrl(avatar, 60 * 60);
+                  const { data: signed } = await admin.storage
+                    .from("cover-photos")
+                    .createSignedUrl(avatar, 60 * 60);
                   avatarPublicUrl = signed?.signedUrl ?? null;
                 }
               } catch (e) {
@@ -84,7 +102,10 @@ export async function GET(req: NextRequest) {
               }
             }
 
-            return NextResponse.json({ profile: normalizedFromAuth, avatarPublicUrl }, { status: 200 });
+            return NextResponse.json(
+              { profile: normalizedFromAuth, avatarPublicUrl },
+              { status: 200 }
+            );
           }
         } catch (e) {
           console.error("service-role auth fetch error:", e);
