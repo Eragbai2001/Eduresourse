@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   SkeletonCourseCard,
   SkeletonCourseDetail,
@@ -74,7 +74,7 @@ export default function CoursesPage() {
   const [activeDepartment, setActiveDepartment] = useState("All Departments");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [signedUrls, setSignedUrls] = useState<string[]>([]);
+  const signedUrlsRef = React.useRef<string[] | null>(null);
   const [uploader, setUploader] = useState<Profile | null>(null);
   const [uploaderAvatarUrl, setUploaderAvatarUrl] = useState<string | null>(
     null
@@ -99,13 +99,14 @@ export default function CoursesPage() {
     [courses]
   );
 
-  const params = useParams();
+  const searchParams = useSearchParams();
+  const courseIdFromQuery = searchParams?.get("courseId");
   const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
     async function fetchSignedUrls() {
-      setSignedUrls([]); // reset while loading
+  signedUrlsRef.current = [];
       if (!selectedCourse?.files || selectedCourse.files.length === 0) return;
 
       const results = await Promise.allSettled(
@@ -172,10 +173,8 @@ export default function CoursesPage() {
       }
 
       if (!mounted) return;
-      const urls = results.map((r) =>
-        r.status === "fulfilled" ? (r.value as string) : ""
-      );
-      setSignedUrls(urls);
+      const urls = results.map((r) => (r.status === "fulfilled" ? (r.value as string) : ""));
+      signedUrlsRef.current = urls;
     }
 
     fetchSignedUrls();
@@ -199,7 +198,7 @@ export default function CoursesPage() {
           let body = null;
           try {
             body = await res.json();
-          } catch (e) {
+          } catch {
             body = await res.text();
           }
           console.error("Error fetching uploader profile:", body);
@@ -214,8 +213,8 @@ export default function CoursesPage() {
         if (!mounted) return;
         setUploader(profile);
         if (avatarPublicUrl) setUploaderAvatarUrl(avatarPublicUrl);
-      } catch (e) {
-        console.error("fetchUploader error:", e);
+      } catch (err) {
+        console.error("fetchUploader error:", err);
       }
     }
 
@@ -250,38 +249,59 @@ export default function CoursesPage() {
   // Fetch courses from API
   useEffect(() => {
     setIsCoursesLoading(true);
+    // Debug: log when we request the full course list
+    console.log("[debug] requesting /api/resources");
     fetch("/api/resources")
       .then((res) => res.json())
       .then((data) => {
+        console.log("[debug] /api/resources response count:", Array.isArray(data) ? data.length : 0);
+        if (Array.isArray(data)) console.log("[debug] course ids:", data.map((c) => c.id));
         setCourses(Array.isArray(data) ? data : []);
         setIsCoursesLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("[debug] /api/resources fetch error:", err);
         setIsCoursesLoading(false);
       });
   }, []);
 
   useEffect(() => {
-    if (params?.id) {
+    // If a courseId is provided in the query string, load that course's details.
+    if (courseIdFromQuery) {
+      // Debug: log the incoming query param used for selection
+      console.log("[debug] courseIdFromQuery:", courseIdFromQuery);
       setIsSelectedCourseLoading(true);
-      fetch(`/api/resources/${params.id}`)
-        .then((res) => res.json())
+      fetch(`/api/resources/${courseIdFromQuery}`)
+        .then(async (res) => {
+          const body = await res.text();
+          try {
+            const json = JSON.parse(body || "null");
+            console.log("[debug] /api/resources/<id> status:", res.status, "body:", json);
+            return json;
+          } catch {
+            console.log("[debug] /api/resources/<id> non-json status:", res.status, "body:", body);
+            return null;
+          }
+        })
         .then((data) => {
           setSelectedCourse(data);
           setIsSelectedCourseLoading(false);
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error("[debug] /api/resources/<id> fetch error:", err);
           setIsSelectedCourseLoading(false);
         });
-    } else if (courses.length > 0 && !isCoursesLoading) {
-      // When courses are loaded and no specific course ID, select first course
+      return;
+    }
+
+    // Otherwise, if courses are loaded, pick the first one as before.
+    if (courses.length > 0 && !isCoursesLoading) {
       setSelectedCourse(courses[0]);
       setIsSelectedCourseLoading(false);
     } else if (!isCoursesLoading && courses.length === 0) {
-      // No courses available
       setIsSelectedCourseLoading(false);
     }
-  }, [params?.id, courses, isCoursesLoading]);
+  }, [courseIdFromQuery, courses, isCoursesLoading]);
 
   // Filter courses based on active tab, department, and level
   const filteredCourses = courses
