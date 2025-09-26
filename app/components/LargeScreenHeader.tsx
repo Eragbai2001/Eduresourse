@@ -17,7 +17,7 @@ export default function LargeScreenHeader() {
   };
 
   return (
-    <header className="h-16 bg-[#F5F8FF] px-6 items-center max-md:hidden md:flex">
+    <header className="h-16 bg-[#F5F8FF] px-6 items-center max-md:hidden md:flex ">
       {/* Left section with logo and navigation */}
       <div className="flex-1">
         <Link href="/" className="font-bold text-xl font-hanken text-blue-600">

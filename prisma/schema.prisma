@@ -43,3 +43,32 @@ model Profile {
   @@schema("public")
   @@map("profiles")
 }
+
+model DownloadReminder {
+  id                    String   @id @default(uuid())
+  userId                String   @map("user_id")
+  resourceId            String   @map("resource_id")
+  firstDownloadedAt     DateTime @map("first_downloaded_at")
+  reminderScheduledAt   DateTime @map("reminder_scheduled_at")
+  reminderSentAt        DateTime? @map("reminder_sent_at")
+  status                String   @default("scheduled")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  @@schema("public")
+  @@map("download_reminders")
+  @@unique([userId, resourceId])
+}
+
+model Rating {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  resourceId String   @map("resource_id")
+  score      Int
+  review     String?  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@schema("public")
+  @@map("ratings")
+  @@unique([userId, resourceId])
+}
