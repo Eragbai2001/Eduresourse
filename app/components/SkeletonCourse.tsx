@@ -5,7 +5,7 @@ export function SkeletonCourseCard() {
       <div className="flex items-start w-full gap-2">
         {/* Cover photo skeleton */}
         <div className="h-[87px] w-[87px] rounded-xl bg-gray-200"></div>
-        
+
         <div className="flex-grow ml-5">
           {/* Category and level skeleton */}
           <div className="flex items-center mb-2">
@@ -57,13 +57,13 @@ export function SkeletonCourseDetail() {
           <div className="h-4 bg-gray-200 rounded w-20"></div>
           <div className="h-3 bg-gray-200 rounded w-32 ml-3"></div>
         </div>
-        
+
         {/* Title and status */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2 mb-3">
           <div className="h-7 bg-gray-200 rounded w-3/4"></div>
           <div className="h-6 bg-gray-200 rounded-full w-16"></div>
         </div>
-        
+
         {/* Stats */}
         <div className="flex flex-wrap items-center gap-3.5">
           {[...Array(4)].map((_, i) => (
@@ -77,6 +77,12 @@ export function SkeletonCourseDetail() {
 
       {/* Cover image skeleton */}
       <div className="mb-4 h-[200px] sm:h-[250px] md:h-[300px] lg:h-[340px] w-full bg-gray-200 rounded-md"></div>
+
+      {/* Uploader avatar and name skeleton */}
+      <div className="mt-3 flex items-center space-x-3 mb-3">
+        <div className="w-10 h-10 rounded-full bg-gray-200" />
+        <div className="w-32 h-4 rounded bg-gray-200" />
+      </div>
 
       {/* About Course section */}
       <div className="mb-4">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { createServerClient } from "@supabase/ssr";
 
@@ -17,11 +18,13 @@ export async function GET(req: NextRequest) {
 
     // Aggregate ratings
     try {
-      const res = await prisma.$queryRaw`
-        SELECT COUNT(*)::int as count, AVG(score)::numeric(3,2) as average
-        FROM public.ratings
-        WHERE resource_id = ${resourceId}
-      `;
+      const res = await prisma.$queryRaw(
+        Prisma.sql`
+          SELECT COUNT(*)::int as count, AVG(score)::numeric(3,2) as average
+          FROM public.ratings
+          WHERE resource_id = ${resourceId}
+        `
+      );
       const row = (res as unknown as Array<Record<string, unknown>>)[0] ?? {
         count: 0,
         average: null,
@@ -56,34 +59,81 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { score, review } = body as { score?: number; review?: string };
+    const { score, review, token } = body as {
+      score?: number;
+      review?: string;
+      token?: string;
+    };
     const pathname = req.nextUrl?.pathname ?? new URL(req.url).pathname;
     const resourceId = extractResourceId(pathname) as string | undefined;
 
-    // authenticate via Supabase server client
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return req.cookies.getAll();
-          },
-          setAll() {
-            return;
-          },
-        },
+    let userId: string;
+
+    // If token is provided, verify it and extract userId
+    if (token) {
+      try {
+        const decoded = Buffer.from(token, "base64url").toString("utf-8");
+        const [userIdFromToken, resourceIdFromToken, timestamp, signature] =
+          decoded.split(":");
+
+        // Verify signature
+        const { createHmac } = await import("crypto");
+        const secret =
+          process.env.RATING_TOKEN_SECRET ||
+          "default-secret-change-in-production";
+        const expectedSignature = createHmac("sha256", secret)
+          .update(`${userIdFromToken}:${resourceIdFromToken}:${timestamp}`)
+          .digest("hex");
+
+        if (signature !== expectedSignature) {
+          return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+        }
+
+        // Verify token is for this resource
+        if (resourceIdFromToken !== resourceId) {
+          return NextResponse.json(
+            { error: "Token mismatch" },
+            { status: 401 }
+          );
+        }
+
+        // Token is valid within 30 days
+        const tokenAge = Date.now() - parseInt(timestamp);
+        if (tokenAge > 30 * 24 * 60 * 60 * 1000) {
+          return NextResponse.json({ error: "Token expired" }, { status: 401 });
+        }
+
+        userId = userIdFromToken;
+      } catch (err) {
+        console.error("Token validation error:", err);
+        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
       }
-    );
+    } else {
+      // authenticate via Supabase server client
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return req.cookies.getAll();
+            },
+            setAll() {
+              return;
+            },
+          },
+        }
+      );
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user)
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const userId = user.id;
+      userId = user.id;
+    }
 
     if (typeof score !== "number" || score < 1 || score > 5) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -91,11 +141,13 @@ export async function POST(req: NextRequest) {
 
     // Upsert rating (unique userId+resourceId)
     const ratingId = randomUUID();
-    await prisma.$executeRaw`
-      INSERT INTO public.ratings (id, user_id, resource_id, score, review)
-      VALUES (${ratingId}, ${userId}, ${resourceId}, ${score}, ${review})
-      ON CONFLICT (user_id, resource_id) DO UPDATE SET score = ${score}, review = ${review}, updated_at = now()
-    `;
+    await prisma.$executeRaw(
+      Prisma.sql`
+        INSERT INTO public.ratings (id, user_id, resource_id, score, review, created_at, updated_at)
+        VALUES (${ratingId}, ${userId}, ${resourceId}, ${score}, ${review}, now(), now())
+        ON CONFLICT (user_id, resource_id) DO UPDATE SET score = ${score}, review = ${review}, updated_at = now()
+      `
+    );
 
     return NextResponse.json({ ok: true });
   } catch (err) {

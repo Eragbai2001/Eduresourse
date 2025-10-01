@@ -75,11 +75,13 @@ export default function CoursesPage() {
   const [activeDepartment, setActiveDepartment] = useState("All Departments");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [showAll, setShowAll] = useState(false);
   // signedUrls prefetch removed to keep logic simple; signed URLs are generated on demand.
   const [uploader, setUploader] = useState<Profile | null>(null);
   const [uploaderAvatarUrl, setUploaderAvatarUrl] = useState<string | null>(
     null
   );
+  const [isUploaderLoading, setIsUploaderLoading] = useState(false);
   // Ratings summary for display (average and count). We fetch a lightweight
   // aggregate when a course is selected so this page can show the current
   // rating without offering the rating form itself.
@@ -121,11 +123,18 @@ export default function CoursesPage() {
     async function fetchUploader() {
       setUploader(null);
       setUploaderAvatarUrl(null);
+      setIsUploaderLoading(true);
 
-      if (!selectedCourse?.userId) return;
+      if (!selectedCourse?.userId) {
+        setIsUploaderLoading(false);
+        return;
+      }
 
       try {
-        // Call our server endpoint which returns profile + resolved avatarPublicUrl
+        // Call our server endpoint which returns profile (may include a
+        // resolved avatarPublicUrl or a raw avatar_url). The endpoint is
+        // responsible for resolving storage paths to public URLs when
+        // available.
         const res = await fetch(`/api/profiles/${selectedCourse.userId}`);
         if (!res.ok) {
           let body = null;
@@ -140,14 +149,28 @@ export default function CoursesPage() {
 
         const payload = await res.json();
         const profile = payload?.profile ?? null;
-        const avatarPublicUrl = payload?.avatarPublicUrl ?? null;
 
         if (!profile) return;
         if (!mounted) return;
+
         setUploader(profile);
-        if (avatarPublicUrl) setUploaderAvatarUrl(avatarPublicUrl);
+
+        // Prefer an already-resolved URL (avatarPublicUrl), otherwise use
+        // avatar_url if it looks like an absolute URL. If it's a storage
+        // path, we leave it to the server to have resolved it; otherwise
+        // we won't try to construct it here to avoid guessing bucket names.
+        const resolvedUrl =
+          profile.avatarPublicUrl ||
+          (profile.avatar_url &&
+          profile.avatar_url.toString().startsWith("http")
+            ? profile.avatar_url
+            : null);
+
+        setUploaderAvatarUrl(resolvedUrl ?? null);
+        setIsUploaderLoading(false);
       } catch (err) {
         console.error("fetchUploader error:", err);
+        setIsUploaderLoading(false);
       }
     }
 
@@ -332,6 +355,13 @@ export default function CoursesPage() {
         : course.department === activeDepartment
     );
 
+  // Clear selected course when filtered courses becomes empty
+  useEffect(() => {
+    if (!isCoursesLoading && filteredCourses.length === 0 && selectedCourse) {
+      setSelectedCourse(null);
+    }
+  }, [filteredCourses.length, isCoursesLoading, selectedCourse]);
+
   function getCourseAgeLabel(course: Course) {
     const now = new Date();
     const created = new Date(course.createdAt);
@@ -343,7 +373,12 @@ export default function CoursesPage() {
   return (
     <div className="h-full w-full bg-[#F5F8FF] flex flex-col lg:flex-row lg:justify-between gap-4 font-hanken">
       {/* Left side - Courses list */}
-      <div className="bg-[#F5F8FF] w-full mb-4 lg:mb-0 h-full">
+      <div
+        className={`bg-[#F5F8FF] mb-4 lg:mb-0 h-full ${
+          filteredCourses.length === 0 && !isCoursesLoading
+            ? "w-full"
+            : "w-full"
+        }`}>
         {/* Simple tab filter */}
         <div className="flex items-center justify-between mb-6">
           {/* Tab filters */}
@@ -356,7 +391,42 @@ export default function CoursesPage() {
                     ? "bg-[#CDDEFF] text-[#2E3135]"
                     : "text-[#797B7E] hover:bg-white/50"
                 }`}
-                onClick={() => setActiveTab(tab)}>
+                onClick={() => {
+                  const newTab = tab;
+                  setActiveTab(newTab);
+                  setShowAll(false); // Reset to show only 4 courses
+
+                  // Auto-select first course in the new filtered list after state updates
+                  setTimeout(() => {
+                    const filtered = courses
+                      .filter((course) => {
+                        if (newTab === "All") return true;
+                        const created = new Date(course.createdAt);
+                        if (newTab === "Recent") return created >= oneYearAgo;
+                        if (newTab === "Old") return created < oneYearAgo;
+                        return true;
+                      })
+                      .filter((course) =>
+                        activeLevel === "All Levels"
+                          ? true
+                          : course.level === activeLevel
+                      )
+                      .filter((course) =>
+                        activeDepartment === "All Departments"
+                          ? true
+                          : course.department === activeDepartment
+                      );
+
+                    if (filtered.length > 0) {
+                      setSelectedCourse(filtered[0]);
+                      router.push(
+                        `/dashboard/courses?courseId=${filtered[0].id}`
+                      );
+                    } else {
+                      setSelectedCourse(null);
+                    }
+                  }, 0);
+                }}>
                 {tab}
               </button>
             ))}
@@ -443,13 +513,29 @@ export default function CoursesPage() {
 
         {/* Course list with skeleton loading */}
         <div className="space-y-8">
-          {isCoursesLoading
-            ? // Show skeleton cards while loading
-              [...Array(5)].map((_, index) => (
-                <SkeletonCourseCard key={index} />
-              ))
-            : // Show actual courses
-              filteredCourses.map((course) => (
+          {isCoursesLoading ? (
+            // Show skeleton cards while loading
+            [...Array(5)].map((_, index) => <SkeletonCourseCard key={index} />)
+          ) : filteredCourses.length === 0 ? (
+            // Show empty state when no courses match filters - centered full width
+            <div className="flex items-center justify-center min-h-[60vh] w-full">
+              <div className="bg-white rounded-xl p-12 text-center max-w-lg w-full mx-auto">
+                <div className="flex flex-col items-center justify-center">
+                  <BookOpen className="w-20 h-20 text-gray-300 mb-6" />
+                  <h3 className="text-2xl font-semibold text-gray-700 mb-3">
+                    No Courses Available
+                  </h3>
+                  <p className="text-gray-500 text-base leading-relaxed">
+                    There are no courses matching your current filters. Try
+                    adjusting your search criteria.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Show actual courses
+            (showAll ? filteredCourses : filteredCourses.slice(0, 4)).map(
+              (course) => (
                 <div
                   key={course.id}
                   className={`px-4 py-3 border rounded-xl cursor-pointer w-full ${
@@ -481,7 +567,7 @@ export default function CoursesPage() {
                           }
                           alt={course.title}
                           fill
-                          className="object-cover"
+                          className="object-cover "
                         />
                       ) : (
                         <span className="text-2xl font-bold text-white select-none">
@@ -545,281 +631,339 @@ export default function CoursesPage() {
                     </span>
                   </div>
                 </div>
-              ))}
+              )
+            )
+          )}
+
+          {/* Show More/Less button */}
+          {!isCoursesLoading && filteredCourses.length > 4 && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="px-6 py-2 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border border-gray-200 transition-colors duration-200 flex items-center gap-2">
+                {showAll ? (
+                  <>
+                    Show Less
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    Show More ({filteredCourses.length - 4} more)
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Right side - Course description with skeleton loading */}
-      <div className="bg-white rounded-xl w-full lg:ml-auto h-fit p-4">
-        {isSelectedCourseLoading || isCoursesLoading ? (
-          <SkeletonCourseDetail />
-        ) : selectedCourse ? (
-          <div>
-            <div className="mb-4">
-              <div className="text-[17px] text-[#8D8F91] flex items-center">
-                {selectedCourse.department}
-                <span className="mx-2 text-gray-300 text-sm">•</span>
-                <span style={{ color: getLevelColor(selectedCourse.level) }}>
-                  {selectedCourse.level}
-                </span>
-                <span className="text-xs text-gray-400 pl-3">
-                  Created:{" "}
-                  {new Date(selectedCourse.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2">
-                <h2 className="text-[22px] sm:text-[26px] font-bold">
-                  {selectedCourse.title}
-                </h2>
-                <span className="text-xs min-w-[68px] w-fit px-3 h-[24px] rounded-full flex justify-center items-center text-[13px] sm:text-[14px] font-medium self-start sm:self-auto bg-[#FCF2F9] text-[#2E3135]">
-                  <div className="w-[6px] h-[6px] flex items-center mr-1.5">
-                    <Image
-                      src="/courses/Color Indicator.png"
-                      alt="status indicator"
-                      width={6}
-                      height={6}
-                      className="object-cover"
-                    />
-                  </div>
-                  {getCourseAgeLabel(selectedCourse)}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center text-xs text-gray-500 mt-3 gap-3.5">
-                {/* Ratings are collected on the dedicated course page. Show a
+      {/* Right side - Course description with skeleton loading - hide when no courses */}
+      {(filteredCourses.length > 0 || isCoursesLoading) && (
+        <div className="bg-white rounded-xl w-full lg:ml-auto h-fit p-4">
+          {isSelectedCourseLoading || isCoursesLoading ? (
+            <SkeletonCourseDetail />
+          ) : selectedCourse ? (
+            <div>
+              <div className="mb-4">
+                <div className="text-[17px] text-[#8D8F91] flex items-center">
+                  {selectedCourse.department}
+                  <span className="mx-2 text-gray-300 text-sm">•</span>
+                  <span style={{ color: getLevelColor(selectedCourse.level) }}>
+                    {selectedCourse.level}
+                  </span>
+                  <span className="text-xs text-gray-400 pl-3">
+                    Created:{" "}
+                    {new Date(selectedCourse.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2">
+                  <h2 className="text-[22px] sm:text-[26px] font-bold">
+                    {selectedCourse.title}
+                  </h2>
+                  <span className="text-xs min-w-[68px] w-fit px-3 h-[24px] rounded-full flex justify-center items-center text-[13px] sm:text-[14px] font-medium self-start sm:self-auto bg-[#FCF2F9] text-[#2E3135]">
+                    <div className="w-[6px] h-[6px] flex items-center mr-1.5">
+                      <Image
+                        src="/courses/Color Indicator.png"
+                        alt="status indicator"
+                        width={6}
+                        height={6}
+                        className="object-cover"
+                      />
+                    </div>
+                    {getCourseAgeLabel(selectedCourse)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center text-xs text-gray-500 mt-3 gap-3.5">
+                  {/* Ratings are collected on the dedicated course page. Show a
                     simple placeholder here: if no rating is available, display
                     0.0 and 0 Reviews. */}
-                <span className="flex items-center mr-4">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-2">
-                    <path
-                      d="M10 15.27L16.18 18l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 3.73L3.82 18z"
-                      fill="#F6C244"
-                    />
-                  </svg>
-                  <span className="font-semibold text-[#2E3135] text-lg">
-                    {rating.average !== null
-                      ? rating.average.toFixed(1)
-                      : "0.0"}
+                  <span className="flex items-center mr-4">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="mr-2">
+                      <path
+                        d="M10 15.27L16.18 18l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 3.73L3.82 18z"
+                        fill="#F6C244"
+                      />
+                    </svg>
+                    <span className="font-semibold text-[#2E3135] text-lg">
+                      {rating.average !== null
+                        ? rating.average.toFixed(1)
+                        : "0.0"}
+                    </span>
+                    <span className="text-[#8D8F91] font-normal ml-2">
+                      ({(rating.count ?? 0).toLocaleString()}{" "}
+                      {rating.count === 1 ? "Review" : "Reviews"})
+                    </span>
                   </span>
-                  <span className="text-[#8D8F91] font-normal ml-2">
-                    ({(rating.count ?? 0).toLocaleString()}{" "}
-                    {rating.count === 1 ? "Review" : "Reviews"})
+
+                  <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                    <BookOpen size={14} className="mr-1 text-gray-400" />
+                    {selectedCourse.resourceCount}{" "}
+                    <span className="text-[#8D8F91] ml-1">resources</span>
                   </span>
-                </span>
 
-                <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
-                  <BookOpen size={14} className="mr-1 text-gray-400" />
-                  {selectedCourse.resourceCount}{" "}
-                  <span className="text-[#8D8F91] ml-1">resources</span>
-                </span>
-
-                <span className="flex items-center text-[#2E3135] font-semibold ">
-                  <DownloadCloud size={14} className="mr-1 text-gray-400" />
-                  {selectedCourse.downloadCount}{" "}
-                  <span className="text-[#8D8F91] ml-1">downloaded</span>
-                </span>
+                  <span className="flex items-center text-[#2E3135] font-semibold ">
+                    <DownloadCloud size={14} className="mr-1 text-gray-400" />
+                    {selectedCourse.downloadCount}{" "}
+                    <span className="text-[#8D8F91] ml-1">downloaded</span>
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div
-              className="mb-4 h-[200px] sm:h-[250px] md:h-[300px] lg:h-[340px] w-full rounded-md overflow-hidden relative flex items-center justify-center"
-              style={{
-                background: !selectedCourse.coverPhoto
-                  ? selectedCourse.coverColor
-                  : undefined,
-              }}>
-              {selectedCourse.coverPhoto ? (
-                <Image
-                  src={
-                    supabase.storage
-                      .from("cover-photos")
-                      .getPublicUrl(selectedCourse.coverPhoto).data.publicUrl
-                  }
-                  alt={`${selectedCourse.title} cover image`}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              ) : (
+              <div
+                className="mb-4 h-[200px] sm:h-[250px] md:h-[300px] lg:h-[340px] w-full rounded-md overflow-hidden relative flex items-center justify-center"
+                style={{
+                  // Always use the course cover color as the background for the
+                  // selected-course header. We intentionally do NOT render the
+                  // uploaded cover image here to prevent showing user-uploaded
+                  // images in this view.
+                  background: selectedCourse.coverColor,
+                }}>
                 <span className="text-5xl font-bold text-white select-none">
                   {(selectedCourse.title || "TITLE").slice(0, 6).toUpperCase()}
                 </span>
-              )}
-            </div>
-
-            <div className="mt-3 flex items-center space-x-3 mb-3 ">
-              {uploaderAvatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={uploaderAvatarUrl}
-                  alt={
-                    uploader?.full_name ?? uploader?.display_name ?? "Uploader"
-                  }
-                  width={40}
-                  height={40}
-                  className="rounded-full w-10 h-10 object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center font-semibold">
-                  {(
-                    (uploader?.display_name ??
-                      uploader?.full_name ??
-                      uploader?.email) ||
-                    (selectedCourse?.userId ?? "U")
-                  )
-                    .toString()
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-              )}
-
-              <div>
-                <div className="text-sm font-medium text-[#2E3135]">
-                  {uploader?.full_name ??
-                    uploader?.display_name ??
-                    uploader?.email ??
-                    "Uploader"}
-                </div>
               </div>
-            </div>
 
-            <div className="mb-4">
-              <h3 className="font-semibold mb-1 text-[16px] text-[#2E3135]">
-                About Course
-              </h3>
-              <p className="text-[14px] text-[#797B7E]">
-                {selectedCourse.description}
-              </p>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="font-semibold mb-1 text-[16px] text-[#2E3135]">
-                Features
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-2">
-                {(selectedCourse.features ?? []).map(
-                  (feature: string, idx: number) => (
-                    <div className="flex items-start" key={idx}>
-                      <span className="text-pink-400 mr-2">✓</span>
-                      <span className="text-sm text-[#797B7E]">{feature}</span>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h3 className="font-semibold mb-3 text-[16px] text-[#2E3135]">
-                Resources
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-2">
-                {(selectedCourse?.files ?? []).map(
-                  (filePath: string, index: number) => {
-                    // Extract display name
-                    const pathParts = filePath.split("/");
-                    const fullFilename = pathParts[pathParts.length - 1];
-                    const timestampMatch = fullFilename.match(/^\d+-(.+)$/);
-                    const displayName = timestampMatch
-                      ? timestampMatch[1]
-                      : fullFilename;
-
-                    // File type logic
-                    const extension = displayName
-                      .split(".")
-                      .pop()
-                      ?.toLowerCase();
-                    const fileType =
-                      extension === "mp4" ||
-                      extension === "avi" ||
-                      extension === "mov"
-                        ? "video"
-                        : extension === "pdf"
-                        ? "pdf"
-                        : extension === "xlsx" ||
-                          extension === "xls" ||
-                          extension === "csv"
-                        ? "excel"
-                        : "file";
-
-                    return (
-                      <div key={index} className="flex items-center">
-                        <div className="w-[12px] h-[12px] mr-3 text-gray-400">
-                          {fileType === "video" ? (
-                            <CirclePlay size={18} className="text-[#797B7E]" />
-                          ) : fileType === "pdf" ? (
-                            <FileText size={18} className="text-[#797B7E]" />
-                          ) : fileType === "excel" ? (
-                            <FileSpreadsheet
-                              size={18}
-                              className="text-[#797B7E]"
-                            />
-                          ) : (
-                            <File size={18} className="text-[#797B7E]" />
-                          )}
-                        </div>
-
-                        {/* Generate signed URL on click instead of prefetching */}
-                        <button
-                          onClick={async () => {
-                            // Ensure path matches your bucket structure
-                            const cleanPath = filePath.startsWith("resources/")
-                              ? filePath
-                              : `resources/${filePath}`;
-
-                            const { data, error } = await supabase.storage
-                              .from("resources")
-                              .createSignedUrl(cleanPath, 60 * 60); // 1 hour expiry
-
-                            if (error) {
-                              console.error(
-                                "Error creating signed URL:",
-                                error
-                              );
-                              return;
-                            }
-
-                            // Increment download count and include userId so server can
-                            // schedule/send a reminder email on first download
-                            await fetch(
-                              `/api/resources/${
-                                selectedCourse!.id
-                              }/increment-download`,
-                              {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ userId: user?.id }),
-                              }
-                            );
-
-                            // Trigger download
-                            const link = document.createElement("a");
-                            link.href = data.signedUrl;
-                            link.download = displayName;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                          className="text-sm text-[#9FB9EB] hover:underline cursor-pointer truncate text-left">
-                          {displayName}
-                        </button>
+              <div className="mt-3 flex items-center space-x-3 mb-3 ">
+                {isUploaderLoading ? (
+                  <>
+                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+                    <div className="w-32 h-4 rounded bg-gray-200 animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    {uploaderAvatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={uploaderAvatarUrl}
+                        alt={
+                          uploader?.full_name ??
+                          uploader?.display_name ??
+                          "Uploader"
+                        }
+                        width={40}
+                        height={40}
+                        className="rounded-full w-10 h-10 object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center font-semibold">
+                        {/* {(
+                        (uploader?.display_name ??
+                          uploader?.full_name ??
+                          uploader?.email) ||
+                        (selectedCourse?.userId ?? "U")
+                      )
+                        .toString()
+                        .slice(0, 2)
+                        .toUpperCase()} */}
                       </div>
-                    );
-                  }
+                    )}
+
+                    <div>
+                      <div className="text-sm font-medium text-[#2E3135]">
+                        {uploader?.full_name ??
+                          uploader?.display_name ??
+                          uploader?.email}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold mb-1 text-[16px] text-[#2E3135]">
+                  About Course
+                </h3>
+                <p className="text-[14px] text-[#797B7E]">
+                  {selectedCourse.description}
+                </p>
+              </div>
+
+              <div className="mb-8">
+                <h3 className="font-semibold mb-1 text-[16px] text-[#2E3135]">
+                  Features
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-2">
+                  {(selectedCourse.features ?? []).map(
+                    (feature: string, idx: number) => (
+                      <div className="flex items-start" key={idx}>
+                        <span className="text-pink-400 mr-2">✓</span>
+                        <span className="text-sm text-[#797B7E]">
+                          {feature}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold mb-3 text-[16px] text-[#2E3135]">
+                  Resources
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-2">
+                  {(selectedCourse?.files ?? []).map(
+                    (filePath: string, index: number) => {
+                      // Extract display name
+                      const pathParts = filePath.split("/");
+                      const fullFilename = pathParts[pathParts.length - 1];
+                      const timestampMatch = fullFilename.match(/^\d+-(.+)$/);
+                      const displayName = timestampMatch
+                        ? timestampMatch[1]
+                        : fullFilename;
+
+                      // File type logic
+                      const extension = displayName
+                        .split(".")
+                        .pop()
+                        ?.toLowerCase();
+                      const fileType =
+                        extension === "mp4" ||
+                        extension === "avi" ||
+                        extension === "mov"
+                          ? "video"
+                          : extension === "pdf"
+                          ? "pdf"
+                          : extension === "xlsx" ||
+                            extension === "xls" ||
+                            extension === "csv"
+                          ? "excel"
+                          : "file";
+
+                      return (
+                        <div key={index} className="flex items-center">
+                          <div className="w-[12px] h-[12px] mr-3 text-gray-400">
+                            {fileType === "video" ? (
+                              <CirclePlay
+                                size={18}
+                                className="text-[#797B7E]"
+                              />
+                            ) : fileType === "pdf" ? (
+                              <FileText size={18} className="text-[#797B7E]" />
+                            ) : fileType === "excel" ? (
+                              <FileSpreadsheet
+                                size={18}
+                                className="text-[#797B7E]"
+                              />
+                            ) : (
+                              <File size={18} className="text-[#797B7E]" />
+                            )}
+                          </div>
+
+                          {/* Generate signed URL on click instead of prefetching */}
+                          <button
+                            onClick={async () => {
+                              // Ensure path matches your bucket structure
+                              const cleanPath = filePath.startsWith(
+                                "resources/"
+                              )
+                                ? filePath
+                                : `resources/${filePath}`;
+
+                              const { data, error } = await supabase.storage
+                                .from("resources")
+                                .createSignedUrl(cleanPath, 60 * 60); // 1 hour expiry
+
+                              if (error) {
+                                console.error(
+                                  "Error creating signed URL:",
+                                  error
+                                );
+                                return;
+                              }
+
+                              // Increment download count and send rating email immediately
+                              await fetch(
+                                `/api/resources/${
+                                  selectedCourse!.id
+                                }/increment-download`,
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    userId: user?.id,
+                                    sendRatingEmail: true, // Send email immediately
+                                  }),
+                                }
+                              );
+
+                              // Trigger download
+                              const link = document.createElement("a");
+                              link.href = data.signedUrl;
+                              link.download = displayName;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            className="text-sm text-[#9FB9EB] hover:underline cursor-pointer truncate text-left">
+                            {displayName}
+                          </button>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="h-full flex items-center justify-center text-gray-400">
-            Select a course to view details
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              Select a course to view details
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

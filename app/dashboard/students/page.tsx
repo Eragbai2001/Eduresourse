@@ -1,10 +1,10 @@
-export default function StudentsPage() {
+import { HorizontalAccordion } from "@/app/components/horizontal-accordion";
+
+export default function Home() {
   return (
-    <div>
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <p className="font-hanken text-gray-600">
-          Manage and review student information here.
-        </p>
+    <div className="min-h-[80vh] bg-[#F5F8FF]  font-hanken">
+      <div className="w-full max-w-[1100px] mx-auto px-4">
+        <HorizontalAccordion />
       </div>
     </div>
   );

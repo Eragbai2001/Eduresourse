@@ -1,10 +1,124 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { randomUUID } from "crypto";
+import { Prisma } from "@prisma/client";
+import { randomUUID, createHmac } from "crypto";
 import { createServerClient } from "@supabase/ssr";
-// ...existing code... (removed unused imports)
+import nodemailer from "nodemailer";
 
-// ...existing code... (removed unused email helper)
+// Helper to generate signed rating token
+function generateRatingToken(userId: string, resourceId: string): string {
+  const secret =
+    process.env.RATING_TOKEN_SECRET || "default-secret-change-in-production";
+  const timestamp = Date.now().toString();
+  const data = `${userId}:${resourceId}:${timestamp}`;
+  const signature = createHmac("sha256", secret).update(data).digest("hex");
+  return Buffer.from(`${data}:${signature}`).toString("base64url");
+}
+
+// Helper to send rating request email
+async function sendRatingEmail(
+  to: string,
+  userName: string,
+  courseTitle: string,
+  resourceId: string,
+  userId: string
+) {
+  const from = process.env.FROM_EMAIL;
+  if (!from) {
+    console.warn("FROM_EMAIL not configured; skipping rating email to", to);
+    return false;
+  }
+
+  const token = generateRatingToken(userId, resourceId);
+  const ratingUrl = `${
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  }/rate/${resourceId}?token=${token}`;
+
+  // Try SMTP first (Nodemailer)
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
+        secure: (process.env.SMTP_SECURE || "").toLowerCase() === "true",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f8ff; margin: 0; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <h2 style="color: #2E3135; margin-bottom: 20px;">Thanks for downloading "${courseTitle}"!</h2>
+              <p style="color: #797B7E; font-size: 16px; line-height: 1.6;">Hi ${userName},</p>
+              <p style="color: #797B7E; font-size: 16px; line-height: 1.6;">We hope you're enjoying the course. Your feedback helps other students make better decisions!</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${ratingUrl}" style="display: inline-block; background-color: #FFB0E8; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">Rate This Course</a>
+              </div>
+              <p style="color: #8D8F91; font-size: 14px; text-align: center; margin-top: 30px;">Or copy this link: <a href="${ratingUrl}" style="color: #9FB9EB;">${ratingUrl}</a></p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      await transporter.sendMail({
+        from,
+        to,
+        subject: `How was "${courseTitle}"? Share your feedback`,
+        html,
+      });
+
+      console.log("✅ Rating email sent via SMTP to:", to);
+      return true;
+    } catch (err) {
+      console.error("SMTP send failed:", err);
+    }
+  }
+
+  // Fallback to SendGrid
+  const key = process.env.SENDGRID_API_KEY;
+  if (key) {
+    try {
+      const html = `
+        <h2>Thanks for downloading "${courseTitle}"!</h2>
+        <p>Hi ${userName},</p>
+        <p>We hope you're enjoying the course. Your feedback helps other students!</p>
+        <p><a href="${ratingUrl}" style="display: inline-block; background-color: #FFB0E8; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px;">Rate This Course</a></p>
+      `;
+
+      const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: from },
+          subject: `How was "${courseTitle}"? Share your feedback`,
+          content: [{ type: "text/html", value: html }],
+        }),
+      });
+
+      if (res.ok) {
+        console.log("✅ Rating email sent via SendGrid to:", to);
+        return true;
+      }
+    } catch (err) {
+      console.error("SendGrid send failed:", err);
+    }
+  }
+
+  console.warn("No SMTP or SendGrid configured; skipping rating email");
+  return false;
+}
 
 // Helper to extract resource id from pathname
 function extractResourceId(pathname: string) {
@@ -72,48 +186,93 @@ export async function POST(req: NextRequest) {
       debug.userIdSource = "session";
     }
 
-    // Perform a transaction: increment downloadCount and optionally create a reminder record
-    const now = new Date();
-    // Schedule the reminder for 24 hours from now. Update this value to change the delay.
-    const scheduled = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
-
-    // Increment download count and create a reminder entry if needed.
+    // Increment download count
     const updated = await prisma.resource.update({
       where: { id },
       data: { downloadCount: { increment: 1 } },
     });
     if (debugEnabled) debug.updatedDownloadCount = updated.downloadCount;
 
-    if (userId) {
-      // Insert a reminder row if none exists. $executeRaw returns the number of
-      // affected rows; if 1 it means we created the row now and should send mail.
-      // Use a raw INSERT that provides an id with gen_random_uuid() to avoid NOT NULL
-      // errors and rely on ON CONFLICT DO NOTHING to skip duplicates. The
-      // returned value is the number of rows affected; when 1 it means we inserted.
-      const reminderId = randomUUID();
-      const result: unknown = await prisma.$executeRaw`
-        INSERT INTO public.download_reminders (id, user_id, resource_id, first_downloaded_at, reminder_scheduled_at, status, created_at)
-        VALUES (${reminderId}, ${userId}, ${id}, ${now}, ${scheduled}, ${"scheduled"}, ${now})
-        ON CONFLICT (user_id, resource_id) DO NOTHING
-      `;
+    // Send rating email immediately if requested and user is available
+    const sendRatingEmailFlag = body && body.sendRatingEmail === true;
+    if (userId && sendRatingEmailFlag) {
+      // Check if this is the first download for this user/resource combination
+      const existingDownload = await prisma.$queryRaw<Array<{ count: bigint }>>(
+        Prisma.sql`
+          SELECT COUNT(*) as count
+          FROM public.download_reminders
+          WHERE user_id = ${userId} AND resource_id = ${id}
+        `
+      );
 
-      // Some drivers return 1 for inserted row; cast defensively
-      const insertedRows = Number(result as number | null);
-      if (debugEnabled) debug.insertedRows = insertedRows;
-      if (insertedRows > 0) {
-        // Reminder row created and scheduled for later delivery. Do NOT send
-        // the email immediately here. The scheduler (app/api/reminders/process)
-        // should find rows with reminder_scheduled_at <= now and send them.
-        console.log("[increment-download] reminder scheduled", {
-          userId,
-          resourceId: id,
-          scheduled,
-        });
-        if (debugEnabled) {
-          debug.scheduled = scheduled.toISOString();
-          debug.note =
-            "Reminder scheduled; no immediate email sent. Use scheduler to process reminders after 24h.";
+      const isFirstDownload = Number(existingDownload[0]?.count || 0) === 0;
+
+      if (isFirstDownload) {
+        // Get user profile and course title for email
+        try {
+          const [profile, resource] = await Promise.all([
+            prisma.$queryRaw<
+              Array<{
+                email: string;
+                full_name?: string;
+                display_name?: string;
+              }>
+            >(
+              Prisma.sql`
+                SELECT email, full_name, display_name
+                FROM public.profiles
+                WHERE user_id = CAST(${userId} AS uuid)
+                LIMIT 1
+              `
+            ),
+            prisma.resource.findUnique({
+              where: { id },
+              select: { title: true },
+            }),
+          ]);
+
+          if (profile[0]?.email && resource?.title) {
+            const userName =
+              profile[0].full_name || profile[0].display_name || "there";
+
+            // Send email in background (don't wait)
+            sendRatingEmail(
+              profile[0].email,
+              userName,
+              resource.title,
+              id,
+              userId
+            ).catch((err) =>
+              console.error("Failed to send rating email:", err)
+            );
+
+            // Track that we sent the email
+            const now = new Date();
+            const reminderId = randomUUID();
+            await prisma.$executeRaw(
+              Prisma.sql`
+                INSERT INTO public.download_reminders (id, user_id, resource_id, first_downloaded_at, reminder_scheduled_at, reminder_sent_at, status, created_at)
+                VALUES (${reminderId}, ${userId}, ${id}, ${now}, ${now}, ${now}, ${"sent"}, ${now})
+                ON CONFLICT (user_id, resource_id) DO NOTHING
+              `
+            );
+
+            if (debugEnabled) {
+              debug.emailSent = true;
+              debug.sentTo = profile[0].email;
+            }
+
+            console.log(
+              `✅ Rating email sent immediately to ${profile[0].email} for resource ${id}`
+            );
+          }
+        } catch (emailErr) {
+          console.error("Error sending rating email:", emailErr);
+          // Don't fail the download increment if email fails
         }
+      } else if (debugEnabled) {
+        debug.emailSent = false;
+        debug.reason = "User has already downloaded this resource";
       }
     }
 
