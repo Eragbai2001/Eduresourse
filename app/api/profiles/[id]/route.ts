@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +12,16 @@ export async function GET(req: NextRequest) {
     if (!userId)
       return NextResponse.json({ error: "Missing user id" }, { status: 400 });
 
-    // Use raw SQL via prisma.$queryRaw to avoid depending on generated model typings
-    // Compare user_id::text to avoid Postgres uuid = text operator error
-    const rows: unknown[] = await prisma.$queryRaw`
-      SELECT user_id, display_name, full_name, avatar_url, email
-      FROM public.profiles
-      WHERE user_id::text = ${userId}
-      LIMIT 1
-    `;
+    // Use Prisma.sql helper to avoid prepared statement issues during regional outages
+    // Cast userId parameter to UUID since Profile.user_id is @db.Uuid
+    const rows: unknown[] = await prisma.$queryRaw(
+      Prisma.sql`
+        SELECT user_id, display_name, full_name, avatar_url, email
+        FROM public.profiles
+        WHERE user_id = CAST(${userId} AS uuid)
+        LIMIT 1
+      `
+    );
 
     const row = (rows?.[0] ?? null) as {
       user_id: string;
@@ -50,9 +53,7 @@ export async function GET(req: NextRequest) {
           );
           if (res.ok) authUser = await res.json();
 
-          function isAuthUser(
-            obj: unknown
-          ): obj is {
+          function isAuthUser(obj: unknown): obj is {
             email?: string;
             user_metadata?: Record<string, unknown>;
           } {

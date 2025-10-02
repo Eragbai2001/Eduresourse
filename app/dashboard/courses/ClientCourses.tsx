@@ -148,24 +148,42 @@ export default function CoursesPage() {
         }
 
         const payload = await res.json();
+        console.log(
+          "[DEBUG] Profile API Response for userId:",
+          selectedCourse.userId
+        );
+        console.log("[DEBUG] Full payload:", payload);
+        console.log(
+          "[DEBUG] payload.avatarPublicUrl:",
+          payload.avatarPublicUrl
+        );
+        console.log(
+          "[DEBUG] profile.avatar_url:",
+          payload?.profile?.avatar_url
+        );
+
         const profile = payload?.profile ?? null;
 
-        if (!profile) return;
+        if (!profile) {
+          console.log("[DEBUG] No profile found, returning");
+          return;
+        }
         if (!mounted) return;
 
         setUploader(profile);
 
-        // Prefer an already-resolved URL (avatarPublicUrl), otherwise use
-        // avatar_url if it looks like an absolute URL. If it's a storage
-        // path, we leave it to the server to have resolved it; otherwise
-        // we won't try to construct it here to avoid guessing bucket names.
+        // Prefer an already-resolved URL (avatarPublicUrl) from the payload root,
+        // otherwise use avatar_url from the profile if it looks like an absolute URL.
+        // If it's a storage path, we leave it to the server to have resolved it;
+        // otherwise we won't try to construct it here to avoid guessing bucket names.
         const resolvedUrl =
-          profile.avatarPublicUrl ||
+          payload.avatarPublicUrl ||
           (profile.avatar_url &&
           profile.avatar_url.toString().startsWith("http")
             ? profile.avatar_url
             : null);
 
+        console.log("[DEBUG] Final resolvedUrl:", resolvedUrl);
         setUploaderAvatarUrl(resolvedUrl ?? null);
         setIsUploaderLoading(false);
       } catch (err) {
@@ -206,8 +224,22 @@ export default function CoursesPage() {
   useEffect(() => {
     setIsCoursesLoading(true);
     fetch("/api/resources")
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("[debug] /api/resources error response:", text);
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
+        return res.json();
+      })
       .then((data) => {
+        console.log("[debug] Fetched courses:", data);
+        console.log("[debug] Number of courses:", data?.length);
+        console.log("[debug] Is array:", Array.isArray(data));
+        if (data && data.length > 0) {
+          console.log("[debug] First course:", data[0]);
+          console.log("[debug] First course createdAt:", data[0].createdAt);
+        }
         // Received course list; update state
         setCourses(Array.isArray(data) ? data : []);
         setIsCoursesLoading(false);
@@ -342,8 +374,19 @@ export default function CoursesPage() {
     .filter((course) => {
       if (activeTab === "All") return true;
       const created = new Date(course.createdAt);
-      if (activeTab === "Recent") return created >= oneYearAgo;
-      if (activeTab === "Old") return created < oneYearAgo;
+      const isRecent = created >= oneYearAgo;
+      console.log(
+        "[debug] Course:",
+        course.title,
+        "Created:",
+        created,
+        "IsRecent:",
+        isRecent,
+        "OneYearAgo:",
+        oneYearAgo
+      );
+      if (activeTab === "Recent") return isRecent;
+      if (activeTab === "Old") return !isRecent;
       return true;
     })
     .filter((course) =>
@@ -354,6 +397,12 @@ export default function CoursesPage() {
         ? true
         : course.department === activeDepartment
     );
+
+  console.log("[debug] Total courses:", courses.length);
+  console.log("[debug] Filtered courses:", filteredCourses.length);
+  console.log("[debug] Active tab:", activeTab);
+  console.log("[debug] Active level:", activeLevel);
+  console.log("[debug] Active department:", activeDepartment);
 
   // Clear selected course when filtered courses becomes empty
   useEffect(() => {
@@ -775,6 +824,18 @@ export default function CoursesPage() {
               </div>
 
               <div className="mt-3 flex items-center space-x-3 mb-3 ">
+                {(() => {
+                  console.log(
+                    "[DEBUG RENDER] isUploaderLoading:",
+                    isUploaderLoading
+                  );
+                  console.log(
+                    "[DEBUG RENDER] uploaderAvatarUrl:",
+                    uploaderAvatarUrl
+                  );
+                  console.log("[DEBUG RENDER] uploader:", uploader);
+                  return null;
+                })()}
                 {isUploaderLoading ? (
                   <>
                     <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
@@ -797,15 +858,15 @@ export default function CoursesPage() {
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center font-semibold">
-                        {/* {(
-                        (uploader?.display_name ??
-                          uploader?.full_name ??
-                          uploader?.email) ||
-                        (selectedCourse?.userId ?? "U")
-                      )
-                        .toString()
-                        .slice(0, 2)
-                        .toUpperCase()} */}
+                        {(
+                          (uploader?.display_name ??
+                            uploader?.full_name ??
+                            uploader?.email) ||
+                          (selectedCourse?.userId ?? "U")
+                        )
+                          .toString()
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </div>
                     )}
 
@@ -813,7 +874,8 @@ export default function CoursesPage() {
                       <div className="text-sm font-medium text-[#2E3135]">
                         {uploader?.full_name ??
                           uploader?.display_name ??
-                          uploader?.email}
+                          uploader?.email ??
+                          "Uploader"}
                       </div>
                     </div>
                   </>

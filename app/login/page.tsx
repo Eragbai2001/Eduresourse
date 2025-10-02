@@ -9,7 +9,6 @@ import { toast } from "sonner";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -19,7 +18,6 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -34,7 +32,7 @@ export default function LoginPage() {
         error instanceof AuthError
           ? error.message
           : "Failed to sign in with Google";
-      setError(errorMessage);
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -66,7 +64,6 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       setLoading(true);
-      setError(null);
 
       // Validate inputs
       if (!email || !password) {
@@ -98,7 +95,6 @@ export default function LoginPage() {
           ? error.message
           : "Failed to sign in with email and password";
       toast.error(errorMessage);
-      setError(null); // Clear the error state since we're using toast
     } finally {
       setLoading(false);
     }
@@ -108,7 +104,6 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       setLoading(true);
-      setError(null);
 
       // Validate email, password, and full name
       if (!email || !password) {
@@ -168,7 +163,6 @@ export default function LoginPage() {
           ? error.message
           : "Failed to create account";
       toast.error(errorMessage);
-      setError(null); // Clear the error state since we're using toast
     } finally {
       setLoading(false);
     }
