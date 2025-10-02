@@ -171,7 +171,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* Left Side - Image carousel */}
-      <LoginImage  />
+      <LoginImage />
 
       {/* Right Side - Login Form (RIVE-inspired) */}
       <div className="w-full lg:w-2/5 bg-white flex items-center justify-center p-8 min-h-screen font-hanken">

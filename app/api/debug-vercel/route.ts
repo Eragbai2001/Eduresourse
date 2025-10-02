@@ -47,15 +47,21 @@ export async function GET() {
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
         { auth: { persistSession: false } }
       );
-      
-      const { error } = await supabase.from("profiles").select("count").limit(1);
+
+      const { error } = await supabase
+        .from("profiles")
+        .select("count")
+        .limit(1);
       if (error) throw error;
-      
+
       diagnostics.supabase = { status: "connected" };
     } catch (supabaseError) {
       diagnostics.supabase = {
         status: "error",
-        error: supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
+        error:
+          supabaseError instanceof Error
+            ? supabaseError.message
+            : String(supabaseError),
       };
     }
 
