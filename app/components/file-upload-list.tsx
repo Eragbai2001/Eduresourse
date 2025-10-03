@@ -92,7 +92,8 @@ export function FileUploadList({
                     size="sm"
                     onClick={() => onRetry(index)}
                     className="text-blue-600 hover:text-blue-700 text-[10px] md:text-xs h-auto py-1 px-1.5 md:px-2">
-                    Try Again <RotateCw className="h-2.5 w-2.5 md:h-3 md:w-3 ml-0.5 md:ml-1" />
+                    Try Again{" "}
+                    <RotateCw className="h-2.5 w-2.5 md:h-3 md:w-3 ml-0.5 md:ml-1" />
                   </Button>
                 )}
                 <Button
@@ -127,7 +128,9 @@ export function FileUploadList({
                   {status === "uploading" && "Uploading..."}
                   {status === "error" && "Upload failed! Please try again."}
                 </p>
-                <p className="text-[10px] md:text-xs font-medium text-gray-700 flex-shrink-0">{progress}%</p>
+                <p className="text-[10px] md:text-xs font-medium text-gray-700 flex-shrink-0">
+                  {progress}%
+                </p>
               </div>
             </div>
           </div>
