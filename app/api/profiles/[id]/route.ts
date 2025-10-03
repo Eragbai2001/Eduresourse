@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -12,16 +11,14 @@ export async function GET(req: NextRequest) {
     if (!userId)
       return NextResponse.json({ error: "Missing user id" }, { status: 400 });
 
-    // Use Prisma.sql helper to avoid prepared statement issues during regional outages
+    // Use $queryRawUnsafe to completely bypass prepared statements (no caching)
     // Cast userId parameter to UUID since Profile.user_id is @db.Uuid
-    const rows: unknown[] = await prisma.$queryRaw(
-      Prisma.sql`
-        SELECT user_id, display_name, full_name, avatar_url, email
-        FROM public.profiles
-        WHERE user_id = CAST(${userId} AS uuid)
-        LIMIT 1
-      `
-    );
+    const rows: unknown[] = await prisma.$queryRawUnsafe(`
+      SELECT user_id, display_name, full_name, avatar_url, email
+      FROM public.profiles
+      WHERE user_id = CAST('${userId}' AS uuid)
+      LIMIT 1
+    `);
 
     const row = (rows?.[0] ?? null) as {
       user_id: string;

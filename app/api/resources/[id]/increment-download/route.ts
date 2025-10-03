@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 import { randomUUID, createHmac } from "crypto";
 import { createServerClient } from "@supabase/ssr";
 import nodemailer from "nodemailer";
@@ -197,12 +196,10 @@ export async function POST(req: NextRequest) {
     const sendRatingEmailFlag = body && body.sendRatingEmail === true;
     if (userId && sendRatingEmailFlag) {
       // Check if this is the first download for this user/resource combination
-      const existingDownload = await prisma.$queryRaw<Array<{ count: bigint }>>(
-        Prisma.sql`
-          SELECT COUNT(*) as count
-          FROM public.download_reminders
-          WHERE user_id = ${userId} AND resource_id = ${id}
-        `
+      const existingDownload = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*) as count
+         FROM public.download_reminders
+         WHERE user_id = '${userId}' AND resource_id = '${id}'`
       );
 
       const isFirstDownload = Number(existingDownload[0]?.count || 0) === 0;
@@ -211,19 +208,17 @@ export async function POST(req: NextRequest) {
         // Get user profile and course title for email
         try {
           const [profile, resource] = await Promise.all([
-            prisma.$queryRaw<
+            prisma.$queryRawUnsafe<
               Array<{
                 email: string;
                 full_name?: string;
                 display_name?: string;
               }>
             >(
-              Prisma.sql`
-                SELECT email, full_name, display_name
-                FROM public.profiles
-                WHERE user_id = CAST(${userId} AS uuid)
-                LIMIT 1
-              `
+              `SELECT email, full_name, display_name
+               FROM public.profiles
+               WHERE user_id = CAST('${userId}' AS uuid)
+               LIMIT 1`
             ),
             prisma.resource.findUnique({
               where: { id },
@@ -249,12 +244,10 @@ export async function POST(req: NextRequest) {
             // Track that we sent the email
             const now = new Date();
             const reminderId = randomUUID();
-            await prisma.$executeRaw(
-              Prisma.sql`
-                INSERT INTO public.download_reminders (id, user_id, resource_id, first_downloaded_at, reminder_scheduled_at, reminder_sent_at, status, created_at)
-                VALUES (${reminderId}, ${userId}, ${id}, ${now}, ${now}, ${now}, ${"sent"}, ${now})
-                ON CONFLICT (user_id, resource_id) DO NOTHING
-              `
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO public.download_reminders (id, user_id, resource_id, first_downloaded_at, reminder_scheduled_at, reminder_sent_at, status, created_at)
+               VALUES ('${reminderId}', '${userId}', '${id}', '${now.toISOString()}', '${now.toISOString()}', '${now.toISOString()}', 'sent', '${now.toISOString()}')
+               ON CONFLICT (user_id, resource_id) DO NOTHING`
             );
 
             if (debugEnabled) {

@@ -9,20 +9,26 @@ export async function GET() {
     const rawResult = await prisma.$queryRaw`SELECT 1 as test`;
     console.log("[DB Test] Raw query successful:", rawResult);
 
-    // Test 2: Count resources
-    const count = await prisma.resource.count();
-    console.log("[DB Test] Resource count:", count);
+    // Test 2: Check actual column names
+    const columnQuery = await prisma.$queryRaw`
+      SELECT column_name, data_type
+      FROM information_schema.columns
+      WHERE table_name = 'Resource'
+      LIMIT 10
+    `;
+    console.log("[DB Test] Columns:", columnQuery);
 
-    // Test 3: Fetch one resource
-    const oneResource = await prisma.resource.findFirst();
-    console.log("[DB Test] Sample resource:", oneResource?.id);
+    // Test 3: Fetch first resource with raw SQL to see structure
+    const rawResource =
+      await prisma.$queryRaw`SELECT * FROM public."Resource" LIMIT 1`;
+    console.log("[DB Test] Raw resource:", rawResource);
 
     return NextResponse.json({
       success: true,
       connection: "working",
       rawQuery: rawResult,
-      resourceCount: count,
-      sampleResourceId: oneResource?.id || null,
+      columns: columnQuery,
+      sampleResource: rawResource,
     });
   } catch (error) {
     const err = error as { message?: string; code?: string; meta?: unknown };

@@ -107,28 +107,83 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  try {
-    console.log("[API] Fetching resources from database...");
-    const resources = await prisma.resource.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    console.log(`[API] Successfully fetched ${resources.length} resources`);
-    return Response.json(resources, { status: 200 });
-  } catch (error) {
-    const err = error as { message?: string; code?: string; meta?: unknown };
-    console.error("[API] Error fetching resources:", error);
-    console.error("[API] Error details:", {
-      message: err.message,
-      code: err.code,
-      meta: err.meta,
-    });
-    return Response.json(
-      {
-        error: "Failed to fetch resources",
-        details: err.message || "Unknown error",
-        code: err.code || "UNKNOWN",
-      },
-      { status: 500 }
-    );
+  // Retry logic to handle Supabase prepared statement caching issues
+  const maxRetries = 2;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(
+        `[API] Fetching resources from database... (attempt ${attempt + 1}/${
+          maxRetries + 1
+        })`
+      );
+
+      // Use $queryRawUnsafe to completely bypass prepared statements (no caching)
+      // Column names are camelCase in the database (Prisma default naming)
+      const resources = await prisma.$queryRawUnsafe(`
+        SELECT 
+          id, "userId", department, level, title, description,
+          features, files, "coverPhoto", "coverColor",
+          "resourceCount", "downloadCount", "viewCount", "createdAt"
+        FROM public."Resource"
+        ORDER BY "createdAt" DESC
+      `);
+
+      console.log(
+        `[API] Successfully fetched ${
+          (resources as unknown[]).length
+        } resources`
+      );
+      return Response.json(resources, { status: 200 });
+    } catch (error) {
+      lastError = error;
+      const err = error as { message?: string; code?: string; meta?: unknown };
+
+      // Check if it's a prepared statement error (code 42P05 or P2010)
+      const isPreparedStatementError =
+        err.code === "P2010" ||
+        err.message?.includes("42P05") ||
+        err.message?.includes("prepared statement");
+
+      if (isPreparedStatementError && attempt < maxRetries) {
+        console.warn(
+          `[API] Prepared statement error, retrying... (attempt ${
+            attempt + 1
+          }/${maxRetries + 1})`
+        );
+        // Small delay before retry
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continue;
+      }
+
+      // If it's not a prepared statement error or we've exhausted retries, throw
+      console.error("[API] Error fetching resources:", error);
+      console.error("[API] Error details:", {
+        message: err.message,
+        code: err.code,
+        meta: err.meta,
+      });
+
+      return Response.json(
+        {
+          error: "Failed to fetch resources",
+          details: err.message || "Unknown error",
+          code: err.code || "UNKNOWN",
+        },
+        { status: 500 }
+      );
+    }
   }
+
+  // If we get here, all retries failed
+  const err = lastError as { message?: string; code?: string; meta?: unknown };
+  return Response.json(
+    {
+      error: "Failed to fetch resources after retries",
+      details: err.message || "Unknown error",
+      code: err.code || "UNKNOWN",
+    },
+    { status: 500 }
+  );
 }

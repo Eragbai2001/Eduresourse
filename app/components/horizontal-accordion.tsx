@@ -298,17 +298,17 @@ export function HorizontalAccordion() {
       title: "Department",
       number: 1,
       content: (
-        <div className="space-y-8 text-center">
+        <div className="space-y-4 md:space-y-8 text-center">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4 ">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
               Which department is this for?
             </h2>
-            <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8">
+            <p className="text-sm md:text-base lg:text-lg text-gray-600 mb-4 md:mb-6 lg:mb-8 px-2">
               Select the academic department for your educational resources
             </p>
           </div>
 
-          <div className="space-y-6 max-w-md mx-auto">
+          <div className="space-y-4 md:space-y-6 max-w-md mx-auto">
             <div>
               <Label
                 htmlFor="department"
@@ -387,12 +387,12 @@ export function HorizontalAccordion() {
       title: "Course Info",
       number: 2,
       content: (
-        <div className="px-6 md:px-12">
+        <div className="px-2 md:px-6 lg:px-12">
           <div className="space-y-1 text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
               Tell us about your course
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-8 px-2">
               Provide a title and description for your educational resources
             </p>
           </div>
@@ -561,22 +561,22 @@ export function HorizontalAccordion() {
       title: "Features",
       number: 3,
       content: (
-        <div className="space-y-8 text-center">
+        <div className="space-y-4 md:space-y-8 text-center">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
               What type of resources are you sharing?
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-8 px-2">
               Select all that apply to help students find what they need
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 max-w-3xl mx-auto">
             {availableFeatures.map((feature) => (
               <div
                 key={feature}
                 className={cn(
-                  "flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                  "flex items-center space-x-2 md:space-x-3 p-3 md:p-4 rounded-lg md:rounded-xl border-2 cursor-pointer transition-all duration-200",
                   formData.features.includes(feature)
                     ? "border-[#FFB0E8] bg-[#FFB0E8]/10"
                     : "border-gray-200 hover:border-gray-300"
@@ -584,9 +584,9 @@ export function HorizontalAccordion() {
                 onClick={() => handleFeatureToggle(feature)}>
                 <Checkbox
                   checked={formData.features.includes(feature)}
-                  className="data-[state=checked]:bg-[#FFB0E8] data-[state=checked]:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="data-[state=checked]:bg-[#FFB0E8] data-[state=checked]:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0 flex-shrink-0"
                 />
-                <span className="text-base font-medium text-gray-900">
+                <span className="text-sm md:text-base font-medium text-gray-900 text-left">
                   {feature}
                 </span>
               </div>
@@ -606,24 +606,24 @@ export function HorizontalAccordion() {
       title: "Upload",
       number: 4,
       content: (
-        <div className="space-y-8 text-center">
+        <div className="space-y-4 md:space-y-8 text-center">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
               Upload your files
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-8 px-2">
               Share your educational materials with the community
             </p>
           </div>
 
-          <div className="max-w-2xl mx-auto flex flex-col min-h-[260px] pb-32 md:pb-24">
-            <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-[#FFB0E8] transition-colors group">
-              <Upload className="h-16 w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-6 transition-colors" />
-              <div className="space-y-2">
-                <p className="text-xl font-semibold text-gray-700">
+          <div className="max-w-2xl mx-auto flex flex-col min-h-[200px] md:min-h-[260px] pb-2">
+            <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 md:p-12 text-center hover:border-[#FFB0E8] transition-colors group">
+              <Upload className="h-12 w-12 md:h-16 md:w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-4 md:mb-6 transition-colors" />
+              <div className="space-y-1 md:space-y-2">
+                <p className="text-base md:text-xl font-semibold text-gray-700">
                   Drop files here or click to browse
                 </p>
-                <p className="text-gray-500">
+                <p className="text-xs md:text-sm text-gray-500 px-2">
                   Supports PDF, DOC, PPT, MP4, JPG, PNG and more
                 </p>
               </div>
@@ -640,7 +640,7 @@ export function HorizontalAccordion() {
               {/* Optional: Overlay to show disabled state */}
               {loading && (
                 <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-xl">
-                  <span className="text-lg font-semibold text-gray-400">
+                  <span className="text-sm md:text-lg font-semibold text-gray-400">
                     Uploading...
                   </span>
                 </div>
@@ -648,7 +648,7 @@ export function HorizontalAccordion() {
             </div>
 
             {formData.resources.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-4 md:mt-6 mb-20 md:mb-0">
                 {/* Map File objects to the FileUploadList shape */}
                 <FileUploadList
                   files={formData.resources.map((f) => ({
@@ -658,6 +658,7 @@ export function HorizontalAccordion() {
                     status: "success",
                   }))}
                   onRemove={removeFile}
+                  disabled={loading}
                   onRetry={(index: number) => {
                     const file = formData.resources[index];
                     toast.error(
@@ -882,15 +883,22 @@ export function HorizontalAccordion() {
                       className={cn(
                         "overflow-y-auto overflow-x-hidden transition-all duration-700 ease-out",
                         // increase max height so content (file list) isn't clipped
+                        // Use different heights for upload section (section-4) to accommodate file list
                         isActive && showContent
-                          ? "max-h-[720px] opacity-100"
+                          ? section.id === "section-4"
+                            ? "max-h-[calc(100vh-280px)] md:max-h-[720px] opacity-100"
+                            : "max-h-[720px] opacity-100"
                           : "max-h-0 opacity-0"
                       )}>
                       <div
                         className={cn(
                           // extra bottom padding on small screens so the fixed nav doesn't cover content
                           // Add horizontal padding on mobile for better spacing
-                          "cursor-text text-gray-600 pt-6 pb-28 md:pb-28 lg:pb-6 px-4 md:px-0",
+                          // Adjust padding for upload section to give more room for file list
+                          "cursor-text text-gray-600 pt-4 md:pt-6",
+                          section.id === "section-4"
+                            ? "pb-24 md:pb-28 lg:pb-6 px-3 md:px-0"
+                            : "pb-28 md:pb-28 lg:pb-6 px-4 md:px-0",
                           !isActive && "invisible opacity-0 pointer-events-none"
                         )}>
                         <div
@@ -920,18 +928,18 @@ export function HorizontalAccordion() {
                     {/* Navigation controls: positioned at the bottom of the parent section and animated */}
                     <div
                       className={cn(
-                        "absolute left-0 right-0 bottom-0 px-6 pb-6 transition-all duration-500 ease-in-out",
+                        "absolute left-0 right-0 bottom-0 px-4 md:px-6 pb-4 md:pb-6 transition-all duration-500 ease-in-out bg-white border-t border-gray-100 md:border-0",
                         isActive
                           ? "translate-y-0 opacity-100 pointer-events-auto"
                           : "translate-y-6 opacity-0 pointer-events-none"
                       )}>
-                      <div className="flex justify-between items-center bg-white">
+                      <div className="flex justify-between items-center bg-white pt-2 md:pt-0">
                         <Button
                           variant="ghost"
                           onClick={handlePrevious}
                           disabled={currentStep === 1}
-                          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 focus-visible:ring-0 focus-visible:ring-offset-0">
-                          <ArrowLeft className="h-4 w-4" />
+                          className="flex items-center space-x-1 md:space-x-2 text-sm md:text-base text-gray-600 hover:text-gray-900 disabled:opacity-50 focus-visible:ring-0 focus-visible:ring-offset-0 h-9 md:h-10 px-3 md:px-4">
+                          <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
                           <span>Back</span>
                         </Button>
 
@@ -939,14 +947,14 @@ export function HorizontalAccordion() {
                           <Button
                             onClick={handleNext}
                             disabled={!isStepValid() || loading}
-                            className="flex items-center space-x-2 h-10 px-6 bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0">
+                            className="flex items-center space-x-1 md:space-x-2 h-9 md:h-10 px-4 md:px-6 text-sm md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0">
                             <span>Next</span>
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="h-3 w-3 md:h-4 md:w-4" />
                           </Button>
                         ) : (
                           <Button
                             disabled={!isStepValid() || loading}
-                            className="h-10 px-6 bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 cursor-pointer"
+                            className="h-9 md:h-10 px-4 md:px-6 text-sm md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 cursor-pointer"
                             onClick={handleSubmit}>
                             {loading ? "Uploading..." : "Upload Resources"}
                           </Button>
