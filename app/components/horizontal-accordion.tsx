@@ -616,15 +616,15 @@ export function HorizontalAccordion() {
             </p>
           </div>
 
-          <div className="max-w-2xl mx-auto flex flex-col min-h-[200px] md:min-h-[260px] pb-2 px-2 md:px-0">
-            <div className="relative border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl p-4 md:p-8 lg:p-12 text-center hover:border-[#FFB0E8] transition-colors group">
-              <Upload className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-3 md:mb-5 lg:mb-6 transition-colors" />
-              <div className="space-y-1 md:space-y-2">
-                <p className="text-sm md:text-lg lg:text-xl font-semibold text-gray-700">
-                  Drop files here or click to browse
+          <div className="max-w-2xl mx-auto flex flex-col md:h-[260px] pb-2 px-2 md:px-0">
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl p-3 md:p-8 lg:p-12 text-center hover:border-[#FFB0E8] transition-colors group">
+              <Upload className="h-8 w-8 md:h-14 md:w-14 lg:h-16 lg:w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-2 md:mb-5 lg:mb-6 transition-colors" />
+              <div className="space-y-0.5 md:space-y-2">
+                <p className="text-xs md:text-lg lg:text-xl font-semibold text-gray-700 leading-tight">
+                  Drop files or browse
                 </p>
-                <p className="text-xs md:text-sm text-gray-500 px-2">
-                  Supports PDF, DOC, PPT, MP4, JPG, PNG and more
+                <p className="text-[10px] md:text-sm text-gray-500 px-1 leading-tight">
+                  PDF, DOC, PPT, MP4, JPG, PNG
                 </p>
               </div>
               <input
@@ -648,7 +648,7 @@ export function HorizontalAccordion() {
             </div>
 
             {formData.resources.length > 0 && (
-              <div className="mt-3 md:mt-5 lg:mt-6 mb-24 md:mb-8 lg:mb-12 px-2 md:px-0">
+              <div className="mt-3 md:mt-5 lg:mt-6 mb-4 md:mb-6 lg:mb-8 px-2 md:px-0">
                 {/* Map File objects to the FileUploadList shape */}
                 <FileUploadList
                   files={formData.resources.map((f) => ({
@@ -823,7 +823,7 @@ export function HorizontalAccordion() {
         <div className="min-h-[80vh] md:min-h-[80vh] bg-[#F5F8FF] flex items-center justify-center px-4 md:px-8">
           {/* Outer wrapper: on md use pink background and large rounded container so active white panel can show pink curved corners */}
           <div className="rounded-xl md:rounded-2xl overflow-hidden mx-auto xl:bg-[#FFB0E8] w-full max-w-5xl">
-            <div className="flex flex-row items-stretch min-h-[640px]">
+            <div className="flex flex-row items-stretch lg:h-[590px] xl:h-[640px]">
               {sections.map((section, index) => {
                 const isActive = activeSection === section.id;
 
@@ -871,7 +871,7 @@ export function HorizontalAccordion() {
                     {isActive && (
                       <h3
                         className={cn(
-                          "text-2xl font-bold transition-all duration-500",
+                          "text-2xl font-bold transition-all duration-500  hidden md:block ",
                           section.color.text,
                           "py-3 px-0 pl-5"
                         )}>
@@ -897,8 +897,8 @@ export function HorizontalAccordion() {
                           // Adjust padding for upload section to give more room for file list
                           "cursor-text text-gray-600 pt-4 md:pt-6",
                           section.id === "section-4"
-                            ? "pb-24 md:pb-32 lg:pb-16 px-3 md:px-0"
-                            : "pb-28 md:pb-28 lg:pb-6 px-4 md:px-0",
+                            ? "pb-20 md:pb-16 lg:pb-16 px-3 md:px-0"
+                            : "pb-20 md:pb-16 lg:pb-6 px-4 ",
                           !isActive && "invisible opacity-0 pointer-events-none"
                         )}>
                         <div
