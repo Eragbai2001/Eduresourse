@@ -616,11 +616,11 @@ export function HorizontalAccordion() {
             </p>
           </div>
 
-          <div className="max-w-2xl mx-auto flex flex-col min-h-[200px] md:min-h-[260px] pb-2">
-            <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 md:p-12 text-center hover:border-[#FFB0E8] transition-colors group">
-              <Upload className="h-12 w-12 md:h-16 md:w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-4 md:mb-6 transition-colors" />
+          <div className="max-w-2xl mx-auto flex flex-col min-h-[200px] md:min-h-[260px] pb-2 px-2 md:px-0">
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl p-4 md:p-8 lg:p-12 text-center hover:border-[#FFB0E8] transition-colors group">
+              <Upload className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-3 md:mb-5 lg:mb-6 transition-colors" />
               <div className="space-y-1 md:space-y-2">
-                <p className="text-base md:text-xl font-semibold text-gray-700">
+                <p className="text-sm md:text-lg lg:text-xl font-semibold text-gray-700">
                   Drop files here or click to browse
                 </p>
                 <p className="text-xs md:text-sm text-gray-500 px-2">
@@ -648,7 +648,7 @@ export function HorizontalAccordion() {
             </div>
 
             {formData.resources.length > 0 && (
-              <div className="mt-4 md:mt-6 mb-20 md:mb-0">
+              <div className="mt-3 md:mt-5 lg:mt-6 mb-24 md:mb-8 lg:mb-12 px-2 md:px-0">
                 {/* Map File objects to the FileUploadList shape */}
                 <FileUploadList
                   files={formData.resources.map((f) => ({
@@ -897,7 +897,7 @@ export function HorizontalAccordion() {
                           // Adjust padding for upload section to give more room for file list
                           "cursor-text text-gray-600 pt-4 md:pt-6",
                           section.id === "section-4"
-                            ? "pb-24 md:pb-28 lg:pb-6 px-3 md:px-0"
+                            ? "pb-24 md:pb-32 lg:pb-16 px-3 md:px-0"
                             : "pb-28 md:pb-28 lg:pb-6 px-4 md:px-0",
                           !isActive && "invisible opacity-0 pointer-events-none"
                         )}>
@@ -954,7 +954,7 @@ export function HorizontalAccordion() {
                         ) : (
                           <Button
                             disabled={!isStepValid() || loading}
-                            className="h-9 md:h-10 px-4 md:px-6 text-sm md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 cursor-pointer"
+                            className="h-8 md:h-10 px-2 md:px-6 text-[11px] md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-lg md:rounded-xl disabled:opacity-50 cursor-pointer"
                             onClick={handleSubmit}>
                             {loading ? "Uploading..." : "Upload Resources"}
                           </Button>
