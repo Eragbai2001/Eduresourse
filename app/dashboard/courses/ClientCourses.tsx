@@ -6,7 +6,6 @@ import {
   CirclePlay,
   FileSpreadsheet,
   FileText,
-  Search,
   File,
   BookOpen,
   DownloadCloud,
@@ -148,6 +147,14 @@ export default function CoursesPage() {
         }
 
         const payload = await res.json();
+
+        // Check if payload is null or invalid
+        if (!payload) {
+          console.log("[DEBUG] Invalid or null payload received");
+          setIsUploaderLoading(false);
+          return;
+        }
+
         console.log(
           "[DEBUG] Profile API Response for userId:",
           selectedCourse.userId
@@ -166,6 +173,7 @@ export default function CoursesPage() {
 
         if (!profile) {
           console.log("[DEBUG] No profile found, returning");
+          setIsUploaderLoading(false);
           return;
         }
         if (!mounted) return;
@@ -257,6 +265,12 @@ export default function CoursesPage() {
       setIsSelectedCourseLoading(true);
       fetch(`/api/resources/${courseIdFromQuery}`)
         .then(async (res) => {
+          if (!res.ok) {
+            console.error(
+              `Failed to fetch resource ${courseIdFromQuery}: ${res.status}`
+            );
+            return null;
+          }
           const body = await res.text();
           try {
             const json = JSON.parse(body || "null");
@@ -267,7 +281,13 @@ export default function CoursesPage() {
           }
         })
         .then((data) => {
-          setSelectedCourse(data);
+          // Only set the course if we have valid data
+          if (data && data.id) {
+            setSelectedCourse(data);
+          } else {
+            console.error("Invalid course data received:", data);
+            setSelectedCourse(null);
+          }
           setIsSelectedCourseLoading(false);
           // Fetch a lightweight aggregate (average + count) for display
           // on the dashboard page.
@@ -483,15 +503,6 @@ export default function CoursesPage() {
 
           {/* Desktop: Category dropdown, Mobile: Search and Menu icons */}
           <div className="flex items-center space-x-2">
-            {/* Search icon for mobile */}
-            <div className="block md:hidden">
-              <button
-                className="bg-white w-10 h-10 flex items-center justify-center rounded-lg"
-                aria-label="Search courses">
-                <Search size={20} stroke="#2E3135" strokeWidth={1.5} />
-              </button>
-            </div>
-
             {/* Menu icon for mobile */}
             <div className="block md:hidden">
               <div className="relative" ref={mobileDropdownRef}>
@@ -582,106 +593,110 @@ export default function CoursesPage() {
               </div>
             </div>
           ) : (
-            // Show actual courses
-            (showAll ? filteredCourses : filteredCourses.slice(0, 4)).map(
-              (course) => (
-                <div
-                  key={course.id}
-                  className={`px-4 py-3 border rounded-xl cursor-pointer w-full ${
-                    selectedCourse?.id === course.id
-                      ? "border-2 border-[#FFB0E8] bg-white"
-                      : "border-none hover:bg-gray-50 bg-white"
-                  }`}
-                  onClick={() => {
-                    setSelectedCourse(course);
-                    router.push(`/dashboard/courses?courseId=${course.id}`);
-                  }}>
-                  {/* Flex container for main content */}
-                  <div className="flex items-start w-full gap-2">
-                    <div
-                      className="h-[87px] w-[87px] rounded-xl flex items-center justify-center"
-                      style={{
-                        background: !course.coverPhoto
-                          ? course.coverColor
-                          : undefined,
-                        position: "relative",
-                        overflow: "hidden",
-                      }}>
-                      {course.coverPhoto ? (
-                        <Image
-                          src={
-                            supabase.storage
-                              .from("cover-photos")
-                              .getPublicUrl(course.coverPhoto).data.publicUrl
-                          }
-                          alt={course.title}
-                          fill
-                          className="object-cover "
-                        />
-                      ) : (
-                        <span className="text-2xl font-bold text-white select-none">
-                          {(course.title || "TITLE").slice(0, 6).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-grow ml-5">
-                      {/* Category and level */}
-                      <div className="flex text-sm items-center">
-                        <span className="text-[#8D8F91] text-[12px]">
-                          {course.department}
-                        </span>
-                        <span className="mx-2 text-gray-300">•</span>
-                        <span
-                          className="text-[12px]"
-                          style={{ color: getLevelColor(course.level) }}>
-                          {course.level}
-                        </span>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="font-semibold text-[#2E3135] text-[18px]">
-                        {course.title}
-                      </h3>
-
-                      {/* Stats for desktop and tablet */}
-                      <div className="hidden md:flex items-center text-xs text-gray-500 mt-4">
-                        <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
-                          <BookOpen size={14} className="mr-1 text-gray-400" />
-                          {course.resourceCount}
-                          <span className="text-[#8D8F91] ml-1">resources</span>
-                        </span>
-
-                        <span className="flex items-center text-[#2E3135] font-semibold">
-                          <DownloadCloud
-                            size={14}
-                            className="mr-1 text-gray-400"
-                          />
-                          {course.downloadCount}
-                          <span className="text-[#8D8F91] ml-1">
-                            downloaded
-                          </span>
-                        </span>
-                      </div>
-                    </div>
+            // Show actual courses - 2 on mobile, 4 on desktop
+            (showAll
+              ? filteredCourses
+              : filteredCourses.slice(
+                  0,
+                  typeof window !== "undefined" && window.innerWidth < 768
+                    ? 2
+                    : 4
+                )
+            ).map((course) => (
+              <div
+                key={course.id}
+                className={`px-4 py-3 border rounded-xl cursor-pointer w-full ${
+                  selectedCourse?.id === course.id
+                    ? "border-2 border-[#FFB0E8] bg-white"
+                    : "border-none hover:bg-gray-50 bg-white"
+                }`}
+                onClick={() => {
+                  setSelectedCourse(course);
+                  router.push(`/dashboard/courses?courseId=${course.id}`);
+                }}>
+                {/* Flex container for main content */}
+                <div className="flex items-start w-full gap-2">
+                  <div
+                    className="h-[87px] w-[87px] rounded-xl flex items-center justify-center"
+                    style={{
+                      background: !course.coverPhoto
+                        ? course.coverColor
+                        : undefined,
+                      position: "relative",
+                      overflow: "hidden",
+                    }}>
+                    {course.coverPhoto ? (
+                      <Image
+                        src={
+                          supabase.storage
+                            .from("cover-photos")
+                            .getPublicUrl(course.coverPhoto).data.publicUrl
+                        }
+                        alt={course.title}
+                        fill
+                        className="object-cover "
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold text-white select-none">
+                        {(course.title || "TITLE").slice(0, 6).toUpperCase()}
+                      </span>
+                    )}
                   </div>
+                  <div className="flex-grow ml-5">
+                    {/* Category and level */}
+                    <div className="flex text-sm items-center">
+                      <span className="text-[#8D8F91] text-[12px]">
+                        {course.department}
+                      </span>
+                      <span className="mx-2 text-gray-300">•</span>
+                      <span
+                        className="text-[12px]"
+                        style={{ color: getLevelColor(course.level) }}>
+                        {course.level}
+                      </span>
+                    </div>
 
-                  {/* Mobile stats in their own block below the main content */}
-                  <div className="md:hidden w-full flex items-center text-xs text-gray-500 mt-4 pt-3 pl-1 border-t-2 border-gray-100">
-                    <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
-                      <BookOpen size={14} className="mr-1 text-gray-400" />
-                      {course.resourceCount}
-                      <span className="text-[#8D8F91] ml-1">resources</span>
-                    </span>
+                    {/* Title */}
+                    <h3 className="font-semibold text-[#2E3135] text-[18px]">
+                      {course.title}
+                    </h3>
 
-                    <span className="flex items-center text-[#2E3135] font-semibold">
-                      <DownloadCloud size={14} className="mr-1 text-gray-400" />
-                      {course.downloadCount}
-                      <span className="text-[#8D8F91] ml-1">downloaded</span>
-                    </span>
+                    {/* Stats for desktop and tablet */}
+                    <div className="hidden md:flex items-center text-xs text-gray-500 mt-4">
+                      <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                        <BookOpen size={14} className="mr-1 text-gray-400" />
+                        {course.resourceCount}
+                        <span className="text-[#8D8F91] ml-1">resources</span>
+                      </span>
+
+                      <span className="flex items-center text-[#2E3135] font-semibold">
+                        <DownloadCloud
+                          size={14}
+                          className="mr-1 text-gray-400"
+                        />
+                        {course.downloadCount}
+                        <span className="text-[#8D8F91] ml-1">downloaded</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )
-            )
+
+                {/* Mobile stats in their own block below the main content */}
+                <div className="md:hidden w-full flex items-center text-xs text-gray-500 mt-4 pt-3 pl-1 border-t-2 border-gray-100">
+                  <span className="flex items-center mr-3 text-[#2E3135] font-semibold">
+                    <BookOpen size={14} className="mr-1 text-gray-400" />
+                    {course.resourceCount}
+                    <span className="text-[#8D8F91] ml-1">resources</span>
+                  </span>
+
+                  <span className="flex items-center text-[#2E3135] font-semibold">
+                    <DownloadCloud size={14} className="mr-1 text-gray-400" />
+                    {course.downloadCount}
+                    <span className="text-[#8D8F91] ml-1">downloaded</span>
+                  </span>
+                </div>
+              </div>
+            ))
           )}
 
           {/* Show More/Less button */}

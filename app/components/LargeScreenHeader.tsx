@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Search, Bell,  } from "lucide-react";
+import { Bell } from "lucide-react";
+import SearchBar from "./SearchBar";
 
 export default function LargeScreenHeader() {
   const { user, signOut, loading } = useAuth();
@@ -27,14 +28,11 @@ export default function LargeScreenHeader() {
 
       {/* Right section with search, auth, and user info */}
       <div className="flex items-center space-x-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search resources..."
-            className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 w-64 text-sm font-hanken focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-        </div>
+        <SearchBar
+          placeholder="Search resources..."
+          className="w-64"
+          focusRingColor="focus:ring-blue-200"
+        />
 
         {loading ? (
           <div className="h-10 w-10 bg-gray-100 rounded-full animate-pulse"></div>

@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Search, Bell, Settings } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+import SearchBar from "./SearchBar";
 
 interface HeaderProps {
   title: string;
@@ -129,14 +130,11 @@ export default function Header({
         </div>
 
         {/* Search bar */}
-        <div className="relative max-lg">
-          <input
-            type="text"
-            placeholder="Search anything"
-            className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 w-64 text-sm font-hanken focus:outline-none focus:ring-2 focus:ring-purple-200 text-[#8D8F91]"
-          />
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-        </div>
+        <SearchBar
+          placeholder="Search resources..."
+          className="max-lg w-64"
+          focusRingColor="focus:ring-purple-200"
+        />
       </div>
 
       {/* Right section containing profile, notifications and settings */}
