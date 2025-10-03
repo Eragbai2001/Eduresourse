@@ -1,5 +1,6 @@
 "use client";
 import CustomDropdown from "@/app/components/CustomDropdown";
+import SearchBar from "@/app/components/SearchBar";
 // Import your skeleton components
 import React, { useEffect, useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   File,
   BookOpen,
   DownloadCloud,
+  Search,
 } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
@@ -81,6 +83,7 @@ export default function CoursesPage() {
     null
   );
   const [isUploaderLoading, setIsUploaderLoading] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   // Ratings summary for display (average and count). We fetch a lightweight
   // aggregate when a course is selected so this page can show the current
   // rating without offering the rating form itself.
@@ -503,6 +506,16 @@ export default function CoursesPage() {
 
           {/* Desktop: Category dropdown, Mobile: Search and Menu icons */}
           <div className="flex items-center space-x-2">
+
+             {/* Search icon for mobile */}
+            <div className="block md:hidden">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="bg-white w-10 h-10 flex items-center justify-center rounded-lg"
+                aria-label="Search courses">
+                <Search size={20} stroke="#2E3135" strokeWidth={1.5} />
+              </button>
+            </div>
             {/* Menu icon for mobile */}
             <div className="block md:hidden">
               <div className="relative" ref={mobileDropdownRef}>
@@ -1039,6 +1052,44 @@ export default function CoursesPage() {
               Select a course to view details
             </div>
           )}
+        </div>
+      )}
+
+      {/* Search Modal for Mobile */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-x-0 top-0 bg-white rounded-b-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-300">
+            <div className="flex items-center space-x-2 mb-4">
+              <button
+                onClick={() => setIsSearchOpen(false)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
+                <svg
+                  className="h-5 w-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+              <h2 className="text-lg font-semibold text-gray-800 font-hanken">
+                Search Resources
+              </h2>
+            </div>
+            <SearchBar
+              placeholder="Search for courses, materials..."
+              className="w-full"
+              focusRingColor="focus:ring-purple-200"
+              onResultClick={() => setIsSearchOpen(false)}
+            />
+            <p className="text-xs text-gray-500 mt-3 text-center font-hanken">
+              Type to search across all resources
+            </p>
+          </div>
         </div>
       )}
     </div>

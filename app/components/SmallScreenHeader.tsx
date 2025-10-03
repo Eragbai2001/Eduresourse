@@ -1,19 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  X,
-  LayoutDashboard,
-  Bookmark,
-  Users,
-  LogOut,
-  Search,
-} from "lucide-react";
+import { X, LayoutDashboard, Bookmark, Users, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import SearchBar from "./SearchBar";
 
 interface SmallScreenHeaderProps {
   title: string;
@@ -23,7 +15,6 @@ export default function SmallScreenHeader({
   title = "Dashboard",
 }: SmallScreenHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useAuth();
@@ -63,16 +54,8 @@ export default function SmallScreenHeader({
           </h1>
         </div>
 
-        {/* Right section - Search & Hamburger menu */}
-        <div className="flex items-center max-md:flex md:hidden space-x-2">
-          {/* Search Button */}
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            className="relative w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            aria-label="Search">
-            <Search className="h-5 w-5 text-gray-700" />
-          </button>
-
+        {/* Right section - Hamburger menu */}
+        <div className="flex items-center max-md:flex md:hidden">
           {/* Hamburger Menu */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -201,33 +184,6 @@ export default function SmallScreenHeader({
           </div>
         </div>
       </div>
-
-      {/* Search Modal for Mobile */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="absolute inset-x-0 top-0 bg-white rounded-b-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-300">
-            <div className="flex items-center space-x-2 mb-4">
-              <button
-                onClick={() => setIsSearchOpen(false)}
-                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
-                <X className="h-5 w-5 text-gray-600" />
-              </button>
-              <h2 className="text-lg font-semibold text-gray-800 font-hanken">
-                Search Resources
-              </h2>
-            </div>
-            <SearchBar
-              placeholder="Search for courses, materials..."
-              className="w-full"
-              focusRingColor="focus:ring-purple-200"
-              onResultClick={() => setIsSearchOpen(false)}
-            />
-            <p className="text-xs text-gray-500 mt-3 text-center font-hanken">
-              Type to search across all resources
-            </p>
-          </div>
-        </div>
-      )}
     </>
   );
 }
