@@ -402,51 +402,51 @@ export function HorizontalAccordion() {
               <Label className="text-base font-medium text-gray-700 mb-2 block">
                 Cover Photo
               </Label>
-              <div
+                <div
                 className={cn(
-                  "relative rounded-xl p-2 text-center transition-colors group h-[190px] w-[190px] flex items-center justify-center",
+                  "relative rounded-xl p-2 text-center transition-colors group flex items-center justify-center",
+                  // Responsive sizing: smaller on mobile, larger on md+
+                  "h-[120px] w-[120px] md:h-[190px] md:w-[190px]",
                   formData.coverPhoto ? "" : " hover:border-[#FFB0E8]"
                 )}
                 style={{
-                  // Only set a background when a color exists to avoid differing
-                  // inline styles between server and client renders.
                   background: !formData.coverPhoto
-                    ? formData.coverColor || undefined
-                    : undefined,
+                  ? formData.coverColor || undefined
+                  : undefined,
                 }}>
                 {formData.coverPhoto ? (
                   <>
-                    <Image
-                      src={URL.createObjectURL(formData.coverPhoto)}
-                      alt="Cover preview"
-                      width={260}
-                      height={260}
-                      unoptimized
-                      className="h-[260px] w-[260px] object-cover rounded-lg border-2 border-gray-300"
-                      style={{ objectFit: "cover" }}
-                    />
-                    {/* Trash button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFormData((prev) => ({
-                          ...prev,
-                          coverPhoto: null,
-                        }));
-                      }}
-                      className="absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10 flex items-center"
-                      aria-label="Remove cover photo">
-                      <Trash className="w-4 h-4 text-red-500" />
-                    </button>
+                  <Image
+                    src={URL.createObjectURL(formData.coverPhoto)}
+                    alt="Cover preview"
+                    width={190}
+                    height={190}
+                    unoptimized
+                    className="h-[120px] w-[120px] md:h-[190px] md:w-[190px] object-cover rounded-lg border-2 border-gray-300"
+                    style={{ objectFit: "cover" }}
+                  />
+                  {/* Trash button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                    e.stopPropagation();
+                    setFormData((prev) => ({
+                      ...prev,
+                      coverPhoto: null,
+                    }));
+                    }}
+                    className="absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10 flex items-center"
+                    aria-label="Remove cover photo">
+                    <Trash className="w-4 h-4 text-red-500" />
+                  </button>
                   </>
                 ) : (
-                  <span className="text-5xl font-bold text-white select-none">
-                    {(formData.title || "TITLE").slice(0, 6).toUpperCase()}
+                  <span className="text-3xl md:text-5xl font-bold text-white select-none">
+                  {(formData.title || "TITLE").slice(0, 6).toUpperCase()}
                   </span>
                 )}
                 {/* cover upload input removed (disabled) */}
-              </div>
+                </div>
             </div>
             {/* Left: Course Info */}
             <div className="flex-1 space-y-7 max-w-xl w-full  ">
@@ -616,9 +616,9 @@ export function HorizontalAccordion() {
             </p>
           </div>
 
-          <div className="max-w-2xl mx-auto flex flex-col md:h-[260px] pb-2 px-2 md:px-0">
-            <div className="relative border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl p-3 md:p-8 lg:p-12 text-center hover:border-[#FFB0E8] transition-colors group">
-              <Upload className="h-8 w-8 md:h-14 md:w-14 lg:h-16 lg:w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-2 md:mb-5 lg:mb-6 transition-colors" />
+          <div className="max-w-2xl mx-auto flex flex-col md:h-[260px] pb-0 px-2 md:px-0">
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl p-4 md:p-8 lg:p-12 text-center hover:border-[#FFB0E8] transition-colors group">
+              <Upload className="h-7 w-7 md:h-14 md:w-14 lg:h-16 lg:w-16 text-gray-400 group-hover:text-[#FFB0E8] mx-auto mb-1.5 md:mb-5 lg:mb-6 transition-colors" />
               <div className="space-y-0.5 md:space-y-2">
                 <p className="text-xs md:text-lg lg:text-xl font-semibold text-gray-700 leading-tight">
                   Drop files or browse
@@ -648,7 +648,7 @@ export function HorizontalAccordion() {
             </div>
 
             {formData.resources.length > 0 && (
-              <div className="mt-3 md:mt-5 lg:mt-6 mb-4 md:mb-6 lg:mb-8 px-2 md:px-0">
+              <div className="mt-2 md:mt-5 lg:mt-6 mb-0 md:mb-6 lg:mb-8 px-2 md:px-0">
                 {/* Map File objects to the FileUploadList shape */}
                 <FileUploadList
                   files={formData.resources.map((f) => ({
@@ -822,8 +822,8 @@ export function HorizontalAccordion() {
       {currentStep > 0 && (
         <div className="min-h-[80vh] md:min-h-[80vh] bg-[#F5F8FF] flex items-center justify-center px-4 md:px-8">
           {/* Outer wrapper: on md use pink background and large rounded container so active white panel can show pink curved corners */}
-          <div className="rounded-xl md:rounded-2xl overflow-hidden mx-auto xl:bg-[#FFB0E8] w-full max-w-5xl">
-            <div className="flex flex-row items-stretch lg:h-[590px] xl:h-[640px]">
+          <div className="rounded-xl md:rounded-2xl overflow-hidden mx-auto xl:bg-[#FFB0E8] w-full max-w-5xl  md:h-[590px] lg:h-[590px] xl:h-[640px]">
+            <div className="flex flex-row items-stretch h-full">
               {sections.map((section, index) => {
                 const isActive = activeSection === section.id;
 
@@ -897,7 +897,7 @@ export function HorizontalAccordion() {
                           // Adjust padding for upload section to give more room for file list
                           "cursor-text text-gray-600 pt-4 md:pt-6",
                           section.id === "section-4"
-                            ? "pb-20 md:pb-16 lg:pb-16 px-3 md:px-0"
+                            ? "pb-16 md:pb-16 lg:pb-16 px-3 md:px-0"
                             : "pb-20 md:pb-16 lg:pb-6 px-4 ",
                           !isActive && "invisible opacity-0 pointer-events-none"
                         )}>
@@ -954,9 +954,9 @@ export function HorizontalAccordion() {
                         ) : (
                           <Button
                             disabled={!isStepValid() || loading}
-                            className="h-8 md:h-10 px-2 md:px-6 text-[11px] md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-lg md:rounded-xl disabled:opacity-50 cursor-pointer"
+                            className="flex items-center justify-center space-x-1 md:space-x-2 h-9 md:h-10 px-2 md:px-5 text-[11px] md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0 whitespace-nowrap"
                             onClick={handleSubmit}>
-                            {loading ? "Uploading..." : "Upload Resources"}
+                            <span className="truncate">{loading ? "Uploading..." : "Upload Resources"}</span>
                           </Button>
                         )}
                       </div>

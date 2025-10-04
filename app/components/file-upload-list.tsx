@@ -69,14 +69,14 @@ export function FileUploadList({
             key={index}
             className="bg-white rounded-lg md:rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
             {/* File info row */}
-            <div className="flex items-center justify-between mb-2 md:mb-3">
+            <div className="flex items-start justify-between mb-2 md:mb-3">
               <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                 <div className="flex-shrink-0">{getFileIcon(file.name)}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate text-xs md:text-sm">
+                <div className="flex-1 min-w-0 max-w-[calc(100%-60px)] md:max-w-none">
+                  <p className="font-medium text-gray-900 text-xs md:text-sm break-words line-clamp-2">
                     {file.name}
                   </p>
-                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 break-words">
                     {(file.size / 1024 / 1024).toFixed(1)} MB
                   </p>
                 </div>
@@ -108,7 +108,7 @@ export function FileUploadList({
             </div>
 
             {/* Progress bar */}
-            <div className="relative">
+            <div className="relative hidden md:block">
               <div className="h-1 md:h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className={cn(

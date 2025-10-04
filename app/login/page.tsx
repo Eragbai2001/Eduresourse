@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { AuthError } from "@supabase/supabase-js";
 import { LoginImage } from "../components/LoginImage";
@@ -339,9 +340,11 @@ export default function LoginPage() {
 
             {/* Additional options */}
             <div className="mt-6 text-left">
-              <button className="text-black hover:text-gray-700 text-lg cursor-pointer">
+              <Link
+                href="/forgot-password"
+                className="text-black hover:text-gray-700 text-lg cursor-pointer">
                 Forgot password?
-              </button>
+              </Link>
             </div>
           </div>
         </div>
