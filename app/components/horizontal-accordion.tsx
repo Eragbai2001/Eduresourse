@@ -402,7 +402,7 @@ export function HorizontalAccordion() {
               <Label className="text-base font-medium text-gray-700 mb-2 block">
                 Cover Photo
               </Label>
-                <div
+              <div
                 className={cn(
                   "relative rounded-xl p-2 text-center transition-colors group flex items-center justify-center",
                   // Responsive sizing: smaller on mobile, larger on md+
@@ -411,42 +411,42 @@ export function HorizontalAccordion() {
                 )}
                 style={{
                   background: !formData.coverPhoto
-                  ? formData.coverColor || undefined
-                  : undefined,
+                    ? formData.coverColor || undefined
+                    : undefined,
                 }}>
                 {formData.coverPhoto ? (
                   <>
-                  <Image
-                    src={URL.createObjectURL(formData.coverPhoto)}
-                    alt="Cover preview"
-                    width={190}
-                    height={190}
-                    unoptimized
-                    className="h-[120px] w-[120px] md:h-[190px] md:w-[190px] object-cover rounded-lg border-2 border-gray-300"
-                    style={{ objectFit: "cover" }}
-                  />
-                  {/* Trash button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                    e.stopPropagation();
-                    setFormData((prev) => ({
-                      ...prev,
-                      coverPhoto: null,
-                    }));
-                    }}
-                    className="absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10 flex items-center"
-                    aria-label="Remove cover photo">
-                    <Trash className="w-4 h-4 text-red-500" />
-                  </button>
+                    <Image
+                      src={URL.createObjectURL(formData.coverPhoto)}
+                      alt="Cover preview"
+                      width={190}
+                      height={190}
+                      unoptimized
+                      className="h-[120px] w-[120px] md:h-[190px] md:w-[190px] object-cover rounded-lg border-2 border-gray-300"
+                      style={{ objectFit: "cover" }}
+                    />
+                    {/* Trash button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFormData((prev) => ({
+                          ...prev,
+                          coverPhoto: null,
+                        }));
+                      }}
+                      className="absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10 flex items-center"
+                      aria-label="Remove cover photo">
+                      <Trash className="w-4 h-4 text-red-500" />
+                    </button>
                   </>
                 ) : (
                   <span className="text-3xl md:text-5xl font-bold text-white select-none">
-                  {(formData.title || "TITLE").slice(0, 6).toUpperCase()}
+                    {(formData.title || "TITLE").slice(0, 6).toUpperCase()}
                   </span>
                 )}
                 {/* cover upload input removed (disabled) */}
-                </div>
+              </div>
             </div>
             {/* Left: Course Info */}
             <div className="flex-1 space-y-7 max-w-xl w-full  ">
@@ -905,7 +905,12 @@ export function HorizontalAccordion() {
                           className={cn(
                             isActive && mounted && showContent && "animate"
                           )}>
-                          {section.content}
+                          <div
+                            className={
+                              section.id === "section-3" ? "mb-4" : undefined
+                            }>
+                            {section.content}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -956,7 +961,9 @@ export function HorizontalAccordion() {
                             disabled={!isStepValid() || loading}
                             className="flex items-center justify-center space-x-1 md:space-x-2 h-9 md:h-10 px-2 md:px-5 text-[11px] md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0 whitespace-nowrap"
                             onClick={handleSubmit}>
-                            <span className="truncate">{loading ? "Uploading..." : "Upload Resources"}</span>
+                            <span className="truncate">
+                              {loading ? "Uploading..." : "Upload Resources"}
+                            </span>
                           </Button>
                         )}
                       </div>

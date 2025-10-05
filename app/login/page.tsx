@@ -20,10 +20,20 @@ export default function LoginPage() {
     try {
       setLoading(true);
 
+      // Get the redirectTo parameter from URL if it exists
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get("redirectTo");
+
+      // Build the callback URL with the redirect parameter
+      let callbackUrl = `${window.location.origin}/auth/callback`;
+      if (redirectTo) {
+        callbackUrl += `?redirectTo=${encodeURIComponent(redirectTo)}`;
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl,
         },
       });
 
@@ -82,9 +92,13 @@ export default function LoginPage() {
       if (data?.user) {
         toast.success("Login successful! Redirecting...");
 
-        // Redirect to dashboard after successful login
+        // Get the redirectTo parameter from URL if it exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get("redirectTo") || "/dashboard";
+
+        // Redirect to the original URL or dashboard after successful login
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = redirectTo;
         }, 1000);
       }
     } catch (error: unknown) {

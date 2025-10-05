@@ -52,6 +52,11 @@ export async function middleware(request: NextRequest) {
 
   if (isDashboard && !session && !comingFromAuthCallback) {
     const redirectUrl = new URL("/login", request.url);
+    // Store the original URL (including query params) so we can redirect back after login
+    redirectUrl.searchParams.set(
+      "redirectTo",
+      request.nextUrl.pathname + request.nextUrl.search
+    );
     return NextResponse.redirect(redirectUrl);
   }
 

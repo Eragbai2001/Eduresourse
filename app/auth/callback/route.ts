@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const redirectTo = requestUrl.searchParams.get("redirectTo");
 
   if (code) {
     const cookieStore = await cookies();
@@ -45,5 +46,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${requestUrl.origin}/login`);
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}/dashboard`);
+  // Redirect to the original URL or dashboard
+  const destination = redirectTo || "/dashboard";
+  return NextResponse.redirect(`${requestUrl.origin}${destination}`);
 }
