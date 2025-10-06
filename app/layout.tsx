@@ -8,9 +8,10 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import NextTopLoader from "nextjs-toploader";
 
 const hankenGrotesk = Hanken_Grotesk({
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   subsets: ["latin"],
   variable: "--font-hanken-grotesk",
+
 });
 
 const geistSans = Geist({
@@ -42,7 +43,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${hankenGrotesk.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}>
+        className={`${hankenGrotesk.variable} ${geistSans.variable} ${geistMono.variable}  font-hanken`}>
         <AuthProvider>{children}</AuthProvider>
         <Toaster position="top-center" richColors />
         <SpeedInsights />

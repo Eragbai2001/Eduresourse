@@ -458,7 +458,7 @@ export function HorizontalAccordion() {
                 </Label>
                 <Input
                   id="title"
-                  placeholder="e.g., Advanced Data Structures and Algorithms"
+                  placeholder="e.g., CSC201-Data Structures and Algorithms"
                   value={formData.title}
                   onChange={(e) =>
                     setFormData((prev) => ({
