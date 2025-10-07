@@ -506,8 +506,7 @@ export default function CoursesPage() {
 
           {/* Desktop: Category dropdown, Mobile: Search and Menu icons */}
           <div className="flex items-center space-x-2">
-
-             {/* Search icon for mobile */}
+            {/* Search icon for mobile */}
             <div className="block md:hidden">
               <button
                 onClick={() => setIsSearchOpen(true)}
@@ -628,9 +627,9 @@ export default function CoursesPage() {
                   router.push(`/dashboard/courses?courseId=${course.id}`);
                 }}>
                 {/* Flex container for main content */}
-                <div className="flex items-start w-full gap-2">
+                <div className="flex items-start w-full gap-2 md:gap-3">
                   <div
-                    className="h-[87px] w-[87px] rounded-xl flex items-center justify-center"
+                    className="h-[87px] w-[87px] min-w-[87px] rounded-xl flex items-center justify-center"
                     style={{
                       background: !course.coverPhoto
                         ? course.coverColor
@@ -655,7 +654,7 @@ export default function CoursesPage() {
                       </span>
                     )}
                   </div>
-                  <div className="flex-grow ml-5">
+                  <div className="flex-grow ml-2 md:ml-5 overflow-hidden">
                     {/* Category and level */}
                     <div className="flex text-sm items-center">
                       <span className="text-[#8D8F91] text-[12px]">
@@ -670,7 +669,7 @@ export default function CoursesPage() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-semibold text-[#2E3135] text-[18px]">
+                    <h3 className="font-semibold text-[#2E3135] text-[16px] md:text-[18px] pr-2 break-words">
                       {course.title}
                     </h3>
 
