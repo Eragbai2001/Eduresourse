@@ -24,11 +24,16 @@ export default function LoginPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get("redirectTo");
 
+      // Use environment variable for production, fallback to window.location.origin for dev
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      
       // Build the callback URL with the redirect parameter
-      let callbackUrl = `${window.location.origin}/auth/callback`;
+      const params = new URLSearchParams();
       if (redirectTo) {
-        callbackUrl += `?redirectTo=${encodeURIComponent(redirectTo)}`;
+        params.set("redirectTo", redirectTo);
       }
+      
+      const callbackUrl = `${baseUrl}/auth/callback${params.toString() ? `?${params.toString()}` : ''}`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
