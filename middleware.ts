@@ -62,7 +62,9 @@ export async function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from login page
   if (isLoginPage && session) {
-    const redirectUrl = new URL("/dashboard", request.url);
+    // Check if there's a redirectTo parameter
+    const redirectTo = request.nextUrl.searchParams.get("redirectTo");
+    const redirectUrl = new URL(redirectTo || "/dashboard", request.url);
     return NextResponse.redirect(redirectUrl);
   }
 

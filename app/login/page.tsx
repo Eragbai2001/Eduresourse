@@ -281,7 +281,12 @@ export default function LoginPage() {
                 </button>
               </div>
               <div className=" bg-gray-100 rounded-t-xl">
-                <button className="py-4 font-medium w-full h-full text-xl relative rounded-bl-xl bg-white ">
+                <button
+                  className={`py-4 font-medium w-full h-full text-xl relative  bg-white  ${
+                    activeTab === "signup"
+                      ? "rounded-bl-xl"
+                      : ""
+                  }`}>
                   <div className=""></div>
                 </button>
               </div>
@@ -299,7 +304,7 @@ export default function LoginPage() {
                     <input
                       type="text"
                       placeholder="full name"
-                      className="w-full p-4 bg-gray-100 rounded-tr-lg outline-none text-lg"
+                      className="w-full p-4 bg-gray-100  rounded-tl-lg rounded-tr-lg outline-none text-lg"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required

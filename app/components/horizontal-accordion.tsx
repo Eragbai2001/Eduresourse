@@ -895,7 +895,7 @@ export function HorizontalAccordion() {
                           // extra bottom padding on small screens so the fixed nav doesn't cover content
                           // Add horizontal padding on mobile for better spacing
                           // Adjust padding for upload section to give more room for file list
-                          "cursor-text text-gray-600 pt-4 md:pt-6",
+                          "cursor-text text-gray-600 pt-4 md:pt-2",
                           section.id === "section-4"
                             ? "pb-16 md:pb-16 lg:pb-16 px-3 md:px-0"
                             : "pb-20 md:pb-16 lg:pb-6 px-4 ",
