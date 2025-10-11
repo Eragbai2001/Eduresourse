@@ -25,15 +25,18 @@ export default function LoginPage() {
       const redirectTo = urlParams.get("redirectTo");
 
       // Use environment variable for production, fallback to window.location.origin for dev
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-      
+      const baseUrl =
+        process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+
       // Build the callback URL with the redirect parameter
       const params = new URLSearchParams();
       if (redirectTo) {
         params.set("redirectTo", redirectTo);
       }
-      
-      const callbackUrl = `${baseUrl}/auth/callback${params.toString() ? `?${params.toString()}` : ''}`;
+
+      const callbackUrl = `${baseUrl}/auth/callback${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -288,9 +291,7 @@ export default function LoginPage() {
               <div className=" bg-gray-100 rounded-t-xl">
                 <button
                   className={`py-4 font-medium w-full h-full text-xl relative  bg-white  ${
-                    activeTab === "signup"
-                      ? "rounded-bl-xl"
-                      : ""
+                    activeTab === "signup" ? "rounded-bl-xl" : ""
                   }`}>
                   <div className=""></div>
                 </button>
