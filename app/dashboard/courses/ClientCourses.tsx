@@ -99,27 +99,28 @@ export default function CoursesPage() {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(now.getFullYear() - 1);
 
-  // Load bookmarked courses from localStorage on mount
+  // Load bookmarked courses from database on mount
   useEffect(() => {
-    const stored = localStorage.getItem("bookmarkedCourses");
-    console.log("[Bookmark] Loading from localStorage:", stored);
-    if (stored) {
+    const fetchBookmarks = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        console.log("[Bookmark] Parsed bookmarks:", parsed);
-        setBookmarkedCourses(new Set(parsed));
+        const response = await fetch("/api/bookmarks");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("[Bookmark] Loaded from database:", data.bookmarks);
+          setBookmarkedCourses(new Set(data.bookmarks));
+        } else {
+          console.error(
+            "[Bookmark] Failed to fetch bookmarks:",
+            response.status
+          );
+        }
       } catch (error) {
-        console.error("Error parsing bookmarked courses:", error);
+        console.error("[Bookmark] Error loading bookmarks:", error);
       }
-    }
-  }, []);
+    };
 
-  // Save bookmarked courses to localStorage whenever it changes
-  useEffect(() => {
-    const bookmarkArray = Array.from(bookmarkedCourses);
-    localStorage.setItem("bookmarkedCourses", JSON.stringify(bookmarkArray));
-    console.log("[Bookmark] Saved to localStorage:", bookmarkArray);
-  }, [bookmarkedCourses]);
+    fetchBookmarks();
+  }, []);
 
   const departments = React.useMemo(
     () => [
@@ -949,32 +950,56 @@ export default function CoursesPage() {
                         ? "bg-gray-800 hover:bg-gray-900 text-white"
                         : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                     }`}
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
                       if (selectedCourse) {
                         const isCurrentlyBookmarked = bookmarkedCourses.has(
                           selectedCourse.id
                         );
 
-                        setBookmarkedCourses((prev) => {
-                          const newSet = new Set(prev);
-                          if (newSet.has(selectedCourse.id)) {
-                            newSet.delete(selectedCourse.id);
+                        try {
+                          if (isCurrentlyBookmarked) {
+                            // Remove bookmark
+                            const response = await fetch(
+                              `/api/bookmarks/${selectedCourse.id}`,
+                              { method: "DELETE" }
+                            );
+                            if (response.ok) {
+                              setBookmarkedCourses((prev) => {
+                                const newSet = new Set(prev);
+                                newSet.delete(selectedCourse.id);
+                                return newSet;
+                              });
+                              toast.success("Removed from Collection", {
+                                icon: "🗑️",
+                              });
+                            }
                           } else {
-                            newSet.add(selectedCourse.id);
+                            // Add bookmark
+                            const response = await fetch("/api/bookmarks", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                resourceId: selectedCourse.id,
+                              }),
+                            });
+                            if (response.ok) {
+                              setBookmarkedCourses((prev) => {
+                                const newSet = new Set(prev);
+                                newSet.add(selectedCourse.id);
+                                return newSet;
+                              });
+                              toast.success("Saved to Collection", {
+                                icon: "�",
+                              });
+                            }
                           }
-                          return newSet;
-                        });
-
-                        // Show toast notification
-                        if (isCurrentlyBookmarked) {
-                          toast.success("Removed from Collection", {
-                            icon: "🗑️",
-                          });
-                        } else {
-                          toast.success("Saved to Collection", {
-                            icon: "📚",
-                          });
+                        } catch (error) {
+                          console.error(
+                            "[Bookmark] Error toggling bookmark:",
+                            error
+                          );
+                          toast.error("Failed to update bookmark");
                         }
                       }
                     }}

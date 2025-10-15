@@ -72,3 +72,16 @@ model Rating {
   @@map("ratings")
   @@unique([userId, resourceId])
 }
+
+model Bookmark {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  resourceId String   @map("resource_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@schema("public")
+  @@map("bookmarks")
+  @@unique([userId, resourceId])
+  @@index([userId])
+  @@index([resourceId])
+}

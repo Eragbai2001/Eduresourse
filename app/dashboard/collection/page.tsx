@@ -31,6 +31,19 @@ interface Course {
   downloadCount: number;
 }
 
+interface Profile {
+  user_id: string;
+  display_name?: string | null;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  email?: string | null;
+}
+
+interface CourseWithUploader extends Course {
+  uploader?: Profile;
+  uploaderAvatarUrl?: string;
+}
+
 export default function CollectionPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -40,11 +53,15 @@ export default function CollectionPage() {
   const [activeLevel, setActiveLevel] = useState("All Levels");
   const [activeDepartment, setActiveDepartment] = useState("All Departments");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesWithUploaders, setCoursesWithUploaders] = useState<
+    CourseWithUploader[]
+  >([]);
   const [bookmarkedCourses, setBookmarkedCourses] = useState<Set<string>>(
     new Set()
   );
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookmarksLoading, setBookmarksLoading] = useState(true);
 
   // Fetch courses
   useEffect(() => {
@@ -72,35 +89,70 @@ export default function CollectionPage() {
     fetchCourses();
   }, []);
 
-  // Load bookmarked courses from localStorage on mount
+  // Load bookmarked courses from database on mount
   useEffect(() => {
-    console.log("[Collection] localStorage useEffect RUNNING!");
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("bookmarkedCourses");
-      console.log("[Collection] Loading from localStorage:", stored);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          console.log("[Collection] Parsed bookmarks:", parsed);
-          setBookmarkedCourses(new Set(parsed));
-        } catch (error) {
+    const fetchBookmarks = async () => {
+      try {
+        const response = await fetch("/api/bookmarks");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("[Collection] Loaded from database:", data.bookmarks);
+          setBookmarkedCourses(new Set(data.bookmarks));
+        } else {
           console.error(
-            "[Collection] Error parsing bookmarked courses:",
-            error
+            "[Collection] Failed to fetch bookmarks:",
+            response.status
           );
         }
-      } else {
-        console.log("[Collection] No bookmarks found in localStorage");
+      } catch (error) {
+        console.error("[Collection] Error loading bookmarks:", error);
+      } finally {
+        setBookmarksLoading(false);
       }
-    }
+    };
+
+    fetchBookmarks();
   }, []);
 
-  // Save bookmarked courses to localStorage whenever it changes
+  // Fetch uploader profiles for all courses
   useEffect(() => {
-    const bookmarkArray = Array.from(bookmarkedCourses);
-    localStorage.setItem("bookmarkedCourses", JSON.stringify(bookmarkArray));
-    console.log("[Collection] Saved to localStorage:", bookmarkArray);
-  }, [bookmarkedCourses]);
+    if (courses.length === 0) return;
+
+    const fetchUploaderProfiles = async () => {
+      const coursesWithData = await Promise.all(
+        courses.map(async (course) => {
+          try {
+            const res = await fetch(`/api/profiles/${course.userId}`);
+            if (res.ok) {
+              const payload = await res.json();
+              const profile = payload?.profile ?? null;
+              const avatarUrl =
+                payload.avatarPublicUrl ||
+                (profile?.avatar_url &&
+                profile.avatar_url.toString().startsWith("http")
+                  ? profile.avatar_url
+                  : null);
+
+              return {
+                ...course,
+                uploader: profile,
+                uploaderAvatarUrl: avatarUrl,
+              };
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching profile for ${course.userId}:`,
+              error
+            );
+          }
+          return { ...course, uploader: null, uploaderAvatarUrl: null };
+        })
+      );
+      setCoursesWithUploaders(coursesWithData);
+    };
+
+    fetchUploaderProfiles();
+  }, [courses]);
 
   // Get unique departments and levels
   const departments = React.useMemo(
@@ -120,7 +172,15 @@ export default function CollectionPage() {
 
   // Filter bookmarked courses - use useMemo to ensure proper recalculation
   const savedCourses = React.useMemo(() => {
-    const filtered = courses
+    // Use coursesWithUploaders if available, otherwise fall back to courses
+    const sourceData = coursesWithUploaders.length > 0 ? coursesWithUploaders : courses;
+    
+    console.log("[Collection] useMemo recalculating...");
+    console.log("[Collection] - Using source:", coursesWithUploaders.length > 0 ? "coursesWithUploaders" : "courses");
+    console.log("[Collection] - Source data length:", sourceData.length);
+    console.log("[Collection] - Bookmarked IDs:", Array.from(bookmarkedCourses));
+    
+    const filtered = sourceData
       .filter((course) => bookmarkedCourses.has(course.id))
       .filter((course) =>
         activeLevel === "All Levels" ? true : course.level === activeLevel
@@ -131,17 +191,17 @@ export default function CollectionPage() {
           : course.department === activeDepartment
       );
 
-    console.log("[Collection] Total courses:", courses.length);
-    console.log(
-      "[Collection] Bookmarked course IDs:",
-      Array.from(bookmarkedCourses)
-    );
-    console.log("[Collection] Filtered saved courses:", filtered.length);
-    console.log("[Collection] Active level:", activeLevel);
-    console.log("[Collection] Active department:", activeDepartment);
+    console.log("[Collection] - Filtered result:", filtered.length, "courses");
+    console.log("[Collection] - Active filters - Level:", activeLevel, "Dept:", activeDepartment);
 
     return filtered;
-  }, [courses, bookmarkedCourses, activeLevel, activeDepartment]);
+  }, [
+    courses,
+    coursesWithUploaders,
+    bookmarkedCourses,
+    activeLevel,
+    activeDepartment,
+  ]);
 
   // Stats data
   const stats = {
@@ -195,32 +255,50 @@ export default function CollectionPage() {
     setSelectedCourse(null);
   };
 
-  const handleBookmarkToggle = (courseId: string) => {
+  const handleBookmarkToggle = async (courseId: string) => {
     const isCurrentlyBookmarked = bookmarkedCourses.has(courseId);
 
-    setBookmarkedCourses((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(courseId)) {
-        newSet.delete(courseId);
+    try {
+      if (isCurrentlyBookmarked) {
+        // Remove bookmark
+        const response = await fetch(`/api/bookmarks/${courseId}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          setBookmarkedCourses((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(courseId);
+            return newSet;
+          });
+          toast.success("Removed from Collection", {
+            icon: "🗑️",
+          });
+        }
       } else {
-        newSet.add(courseId);
+        // Add bookmark
+        const response = await fetch("/api/bookmarks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resourceId: courseId }),
+        });
+        if (response.ok) {
+          setBookmarkedCourses((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(courseId);
+            return newSet;
+          });
+          toast.success("Saved to Collection", {
+            icon: "�",
+          });
+        }
       }
-      return newSet;
-    });
-
-    // Show toast notification
-    if (isCurrentlyBookmarked) {
-      toast.success("Removed from Collection", {
-        icon: "🗑️",
-      });
-    } else {
-      toast.success("Saved to Collection", {
-        icon: "📚",
-      });
+    } catch (error) {
+      console.error("[Collection] Error toggling bookmark:", error);
+      toast.error("Failed to update bookmark");
     }
   };
 
-  if (loading) {
+  if (loading || bookmarksLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
@@ -512,23 +590,40 @@ export default function CollectionPage() {
                     {course.title}
                   </h3>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-purple-600 font-hanken">
-                      Saved
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBookmarkToggle(course.id);
-                      }}
-                      className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-900 text-white transition-colors">
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24">
-                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                      </svg>
-                    </button>
+                  <div className="flex items-center gap-2">
+                    {course.uploaderAvatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={course.uploaderAvatarUrl}
+                        alt={
+                          course.uploader?.full_name ??
+                          course.uploader?.display_name ??
+                          "Uploader"
+                        }
+                        className="rounded-full w-8 h-8 object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center text-xs font-semibold">
+                        {(
+                          (course.uploader?.display_name ??
+                            course.uploader?.full_name ??
+                            course.uploader?.email) ||
+                          "U"
+                        )
+                          .toString()
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-[#2E3135] truncate">
+                        {course.uploader?.full_name ??
+                          course.uploader?.display_name ??
+                          course.uploader?.email ??
+                          "Uploader"}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
