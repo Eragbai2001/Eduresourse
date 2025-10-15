@@ -34,9 +34,9 @@ interface Course {
 export default function CollectionPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [selectedTab, setSelectedTab] = useState<
-    "All" | "Recent" | "Saved"
-  >("All");
+  const [selectedTab, setSelectedTab] = useState<"All" | "Recent" | "Saved">(
+    "All"
+  );
   const [activeLevel, setActiveLevel] = useState("All Levels");
   const [activeDepartment, setActiveDepartment] = useState("All Departments");
   const [courses, setCourses] = useState<Course[]>([]);
@@ -57,7 +57,10 @@ export default function CollectionPage() {
           console.log("[Collection] First course ID:", data[0]?.id);
           setCourses(data);
         } else {
-          console.error("[Collection] Failed to fetch courses:", response.status);
+          console.error(
+            "[Collection] Failed to fetch courses:",
+            response.status
+          );
         }
       } catch (error) {
         console.error("[Collection] Error fetching courses:", error);
@@ -81,7 +84,10 @@ export default function CollectionPage() {
           console.log("[Collection] Parsed bookmarks:", parsed);
           setBookmarkedCourses(new Set(parsed));
         } catch (error) {
-          console.error("[Collection] Error parsing bookmarked courses:", error);
+          console.error(
+            "[Collection] Error parsing bookmarked courses:",
+            error
+          );
         }
       } else {
         console.log("[Collection] No bookmarks found in localStorage");
@@ -126,7 +132,10 @@ export default function CollectionPage() {
       );
 
     console.log("[Collection] Total courses:", courses.length);
-    console.log("[Collection] Bookmarked course IDs:", Array.from(bookmarkedCourses));
+    console.log(
+      "[Collection] Bookmarked course IDs:",
+      Array.from(bookmarkedCourses)
+    );
     console.log("[Collection] Filtered saved courses:", filtered.length);
     console.log("[Collection] Active level:", activeLevel);
     console.log("[Collection] Active department:", activeDepartment);
@@ -416,7 +425,9 @@ export default function CollectionPage() {
         <TabFilter
           tabs={["All", "Recent", "Saved"]}
           activeTab={selectedTab}
-          onTabChange={(tab) => setSelectedTab(tab as "All" | "Recent" | "Saved")}
+          onTabChange={(tab) =>
+            setSelectedTab(tab as "All" | "Recent" | "Saved")
+          }
           departments={departments}
           levels={levels}
           activeDepartment={activeDepartment}
