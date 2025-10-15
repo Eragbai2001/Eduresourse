@@ -62,6 +62,7 @@ LIMIT 10
   - `%` means "any characters before or after"
   - So it matches: "Java", "JAVA", "javascript", "Advanced Java"
 - `OR` - If ANY of the 4 fields match, the course is included
+- 
 - `ORDER BY downloadCount DESC` - Most downloaded courses appear first
 - `LIMIT 10` - Only return top 10 results
 

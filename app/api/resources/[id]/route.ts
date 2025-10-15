@@ -62,3 +62,49 @@ export async function GET(req: NextRequest) {
     { status: 500 }
   );
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const url = new URL(req.url);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const id = parts[parts.length - 1];
+
+    if (!id) {
+      return Response.json(
+        { error: "Resource ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json();
+    const { title, description, features, files } = body;
+
+    // Validate required fields
+    if (!title || !description) {
+      return Response.json(
+        { error: "Title and description are required" },
+        { status: 400 }
+      );
+    }
+
+    // Update the resource
+    const updatedResource = await prisma.resource.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        features: features || [],
+        files: files || [],
+        resourceCount: files?.length || 0,
+      },
+    });
+
+    return Response.json(updatedResource, { status: 200 });
+  } catch (error) {
+    console.error("/api/resources/[id] PUT error:", error);
+    return Response.json(
+      { error: "Failed to update resource" },
+      { status: 500 }
+    );
+  }
+}

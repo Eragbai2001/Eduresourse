@@ -7,7 +7,6 @@ import Header from "@/app/components/Header";
 import SmallScreenHeader from "@/app/components/SmallScreenHeader";
 import Sidebar from "@/app/components/Sidebar";
 
-
 // Function to generate page title and subtitle from pathname
 function getPageInfo(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
@@ -17,6 +16,16 @@ function getPageInfo(pathname: string) {
     return {
       title: "Dashboard",
       subtitle: null, // null will cause Header to use the welcome message
+    };
+  }
+
+  // Special case for edit pages (e.g., /dashboard/courses/edit/[id])
+  if (segments.includes("edit") && segments.length >= 4) {
+    const section = segments[1]; // e.g., "courses"
+    const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
+    return {
+      title: "Edit Resource",
+      subtitle: `Dashboard / ${sectionTitle} / Edit`,
     };
   }
 
@@ -50,7 +59,6 @@ export default function DashboardLayout({
   // Set colors based on the current page
   const dashboardColor = "text-[#F26CF9]";
   const pageColor = "text-[#777779]";
- 
 
   return (
     <div className="min-h-screen bg-[#F5F8FF] flex flex-col">

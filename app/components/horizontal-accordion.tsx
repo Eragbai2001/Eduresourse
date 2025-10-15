@@ -75,14 +75,34 @@ const availableFeatures = [
   "Reference Materials",
 ];
 
-export function HorizontalAccordion() {
+interface HorizontalAccordionProps {
+  editMode?: boolean;
+  courseId?: string;
+  initialData?: {
+    department: string;
+    level: string;
+    title: string;
+    description: string;
+    features: string[];
+    files: string[];
+  };
+  onClose?: () => void;
+}
+
+export function HorizontalAccordion({
+  editMode = false,
+  courseId,
+  initialData,
+  onClose,
+}: HorizontalAccordionProps = {}) {
   const [activeSection, setActiveSection] = useState<string>("section-1");
 
   // ...existing code...
 
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [currentStep, setCurrentStep] = useState(0);
+  // In edit mode, skip the landing page and start at step 1
+  const [currentStep, setCurrentStep] = useState(editMode ? 1 : 0);
   const COVER_COLORS = React.useMemo(
     () => [
       "#F2BC33",
@@ -125,11 +145,11 @@ export function HorizontalAccordion() {
   }
 
   const [formData, setFormData] = useState<ResourceFormState>({
-    department: "",
-    level: "",
-    title: "",
-    description: "",
-    features: [],
+    department: initialData?.department || "",
+    level: initialData?.level || "",
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    features: initialData?.features || [],
     resources: [],
     coverPhoto: null,
     // do not call Math.random()/getRandomCoverColor during render (SSR) to avoid
@@ -203,72 +223,134 @@ export function HorizontalAccordion() {
     }
     setLoading(true);
     try {
-      // Cover photo uploads are disabled; we do not upload or include a cover photo
-      const coverPhotoPath: string | null = null;
+      if (editMode && courseId) {
+        // EDIT MODE: Update existing resource
+        // In edit mode, keep existing files and only add new ones
+        const uploadedFiles: string[] = [...(initialData?.files || [])];
 
-      // Upload files to Supabase Storage and collect their paths
-      const uploadedFiles: string[] = [];
-      for (const file of formData.resources) {
-        const { data, error } = await supabase.storage
-          .from("resources")
-          .upload(`resources/${user.id}/${Date.now()}-${file.name}`, file, {
-            contentType: file.type, // 👈 This ensures proper MIME type is set
-          });
+        // Upload any new files
+        for (const file of formData.resources) {
+          const { data, error } = await supabase.storage
+            .from("resources")
+            .upload(`resources/${user.id}/${Date.now()}-${file.name}`, file, {
+              contentType: file.type,
+            });
 
-        if (error) {
-          toast.error("File upload failed: " + error.message);
+          if (error) {
+            toast.error("File upload failed: " + error.message);
+            setLoading(false);
+            return;
+          }
+          uploadedFiles.push(data.path);
+        }
+
+        // Prepare data for update
+        const dataToUpdate = {
+          title: formData.title,
+          description: formData.description,
+          features: formData.features,
+          files: uploadedFiles,
+        };
+
+        // Call update API
+        const response = await fetch(`/api/resources/${courseId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToUpdate),
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          toast.error(
+            "Error updating resource: " + (result.error || response.statusText)
+          );
           setLoading(false);
           return;
         }
-        uploadedFiles.push(data.path);
-      }
 
-      // No cover photo selection, so filtered resources are the same as uploaded
-      const filteredResources = formData.resources;
+        toast.success("Resource updated successfully!");
 
-      // Prepare data for Prisma API
-      const dataToInsert = {
-        userId: user.id,
-        department: formData.department,
-        level: formData.level,
-        title: formData.title,
-        description: formData.description,
-        features: formData.features,
-        files: uploadedFiles,
-        coverPhoto: coverPhotoPath,
-        coverColor: formData.coverColor, // Include the cover color
-        resourceCount: filteredResources.length,
-        downloadCount: 0,
-      };
+        // Close modal and refresh page
+        if (onClose) onClose();
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        // CREATE MODE: Upload new resource
+        const coverPhotoPath: string | null = null;
 
-      // Call your API route
-      const response = await fetch("/api/resources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToInsert),
-      });
+        // Upload files to Supabase Storage and collect their paths
+        const uploadedFiles: string[] = [];
+        for (const file of formData.resources) {
+          const { data, error } = await supabase.storage
+            .from("resources")
+            .upload(`resources/${user.id}/${Date.now()}-${file.name}`, file, {
+              contentType: file.type,
+            });
 
-      if (!response.ok) {
-        const result = await response.json();
-        toast.error(
-          "Error saving data: " + (result.error || response.statusText)
+          if (error) {
+            toast.error("File upload failed: " + error.message);
+            setLoading(false);
+            return;
+          }
+          uploadedFiles.push(data.path);
+        }
+
+        const filteredResources = formData.resources;
+
+        // Prepare data for Prisma API
+        const dataToInsert = {
+          userId: user.id,
+          department: formData.department,
+          level: formData.level,
+          title: formData.title,
+          description: formData.description,
+          features: formData.features,
+          files: uploadedFiles,
+          coverPhoto: coverPhotoPath,
+          coverColor: formData.coverColor,
+          resourceCount: filteredResources.length,
+          downloadCount: 0,
+        };
+
+        // Call your API route
+        const response = await fetch("/api/resources", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToInsert),
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          toast.error(
+            "Error saving data: " + (result.error || response.statusText)
+          );
+          setLoading(false);
+          return;
+        }
+
+        toast.success(
+          "Resources uploaded successfully! Redirecting to your uploads..."
         );
-        setLoading(false);
-        return;
-      }
 
-      toast.success("Resources uploaded successfully!");
-      setFormData({
-        department: "",
-        level: "",
-        title: "",
-        description: "",
-        features: [],
-        resources: [],
-        coverPhoto: null,
-        coverColor: getRandomCoverColor(),
-      });
-      setCurrentStep(0);
+        // Reset form
+        setFormData({
+          department: "",
+          level: "",
+          title: "",
+          description: "",
+          features: [],
+          resources: [],
+          coverPhoto: null,
+          coverColor: getRandomCoverColor(),
+        });
+        setCurrentStep(0);
+
+        // Redirect to "My Uploads" tab after successful upload
+        setTimeout(() => {
+          window.location.href = "/dashboard/courses?tab=myuploads";
+        }, 1500);
+      }
     } catch {
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
@@ -276,6 +358,34 @@ export function HorizontalAccordion() {
     }
   };
   // file icon rendering moved to a reusable component (FileUploadList)
+
+  // Helper function to check if any changes were made in edit mode
+  const hasChanges = () => {
+    if (!editMode || !initialData) return true; // Not in edit mode, so changes don't matter
+
+    // Check if any field has changed
+    const titleChanged = formData.title !== initialData.title;
+    const descriptionChanged = formData.description !== initialData.description;
+    const departmentChanged = formData.department !== initialData.department;
+    const levelChanged = formData.level !== initialData.level;
+
+    // Check if features have changed (compare arrays)
+    const featuresChanged =
+      JSON.stringify(formData.features.sort()) !==
+      JSON.stringify(initialData.features.sort());
+
+    // Check if new files were uploaded
+    const newFilesAdded = formData.resources.length > 0;
+
+    return (
+      titleChanged ||
+      descriptionChanged ||
+      departmentChanged ||
+      levelChanged ||
+      featuresChanged ||
+      newFilesAdded
+    );
+  };
 
   const isStepValid = () => {
     switch (currentStep) {
@@ -286,6 +396,10 @@ export function HorizontalAccordion() {
       case 3:
         return formData.features.length > 0;
       case 4:
+        // In edit mode, require either changes to existing data OR new files
+        if (editMode) {
+          return hasChanges();
+        }
         return formData.resources.length > 0;
       default:
         return false;
@@ -868,6 +982,7 @@ export function HorizontalAccordion() {
                       </div>
                     )}
 
+
                     {isActive && (
                       <h3
                         className={cn(
@@ -962,7 +1077,13 @@ export function HorizontalAccordion() {
                             className="flex items-center justify-center space-x-1 md:space-x-2 h-9 md:h-10 px-2 md:px-5 text-[11px] md:text-base bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white rounded-xl disabled:opacity-50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0 whitespace-nowrap"
                             onClick={handleSubmit}>
                             <span className="truncate">
-                              {loading ? "Uploading..." : "Upload Resources"}
+                              {loading
+                                ? editMode
+                                  ? "Updating..."
+                                  : "Uploading..."
+                                : editMode
+                                ? "Update Resource"
+                                : "Upload Resources"}
                             </span>
                           </Button>
                         )}

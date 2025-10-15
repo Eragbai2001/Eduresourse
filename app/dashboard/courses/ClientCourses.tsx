@@ -1,6 +1,6 @@
 "use client";
-import CustomDropdown from "@/app/components/CustomDropdown";
 import SearchBar from "@/app/components/SearchBar";
+import TabFilter from "@/app/components/TabFilter";
 // Import your skeleton components
 import React, { useEffect, useState } from "react";
 import {
@@ -10,7 +10,6 @@ import {
   File,
   BookOpen,
   DownloadCloud,
-  Search,
 } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
@@ -20,6 +19,7 @@ import {
   SkeletonCourseCard,
   SkeletonCourseDetail,
 } from "@/app/components/SkeletonCourse";
+import toast, { Toaster } from "react-hot-toast";
 
 // Function to get color based on course level
 const getLevelColor = (level: string) => {
@@ -74,7 +74,6 @@ export default function CoursesPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [activeLevel, setActiveLevel] = useState("All Levels");
   const [activeDepartment, setActiveDepartment] = useState("All Departments");
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [showAll, setShowAll] = useState(false);
   // signedUrls prefetch removed to keep logic simple; signed URLs are generated on demand.
@@ -84,6 +83,10 @@ export default function CoursesPage() {
   );
   const [isUploaderLoading, setIsUploaderLoading] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Bookmarked courses with localStorage persistence
+  const [bookmarkedCourses, setBookmarkedCourses] = useState<Set<string>>(
+    new Set()
+  );
   // Ratings summary for display (average and count). We fetch a lightweight
   // aggregate when a course is selected so this page can show the current
   // rating without offering the rating form itself.
@@ -95,6 +98,28 @@ export default function CoursesPage() {
   const now = new Date();
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(now.getFullYear() - 1);
+
+  // Load bookmarked courses from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("bookmarkedCourses");
+    console.log("[Bookmark] Loading from localStorage:", stored);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        console.log("[Bookmark] Parsed bookmarks:", parsed);
+        setBookmarkedCourses(new Set(parsed));
+      } catch (error) {
+        console.error("Error parsing bookmarked courses:", error);
+      }
+    }
+  }, []);
+
+  // Save bookmarked courses to localStorage whenever it changes
+  useEffect(() => {
+    const bookmarkArray = Array.from(bookmarkedCourses);
+    localStorage.setItem("bookmarkedCourses", JSON.stringify(bookmarkArray));
+    console.log("[Bookmark] Saved to localStorage:", bookmarkArray);
+  }, [bookmarkedCourses]);
 
   const departments = React.useMemo(
     () => [
@@ -115,6 +140,14 @@ export default function CoursesPage() {
   const courseIdFromQuery = searchParams?.get("courseId");
   const router = useRouter();
   const { user } = useAuth();
+
+  // Set active tab from URL query parameter
+  useEffect(() => {
+    const tabFromQuery = searchParams?.get("tab");
+    if (tabFromQuery === "myuploads") {
+      setActiveTab("My Uploads");
+    }
+  }, [searchParams]);
 
   // We intentionally do not prefetch signed URLs here to keep behavior simple and
   // to avoid extra storage calls. Signed URLs are created on demand when the
@@ -208,28 +241,6 @@ export default function CoursesPage() {
       mounted = false;
     };
   }, [selectedCourse]);
-
-  const mobileDropdownRef = React.useRef<HTMLDivElement>(null);
-  const desktopDropdownRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const clickedOutsideMobile =
-        mobileDropdownRef.current &&
-        !mobileDropdownRef.current.contains(event.target as Node);
-
-      const clickedOutsideDesktop =
-        desktopDropdownRef.current &&
-        !desktopDropdownRef.current.contains(event.target as Node);
-
-      if (clickedOutsideMobile && clickedOutsideDesktop) {
-        setMobileFiltersOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Fetch courses from API
   useEffect(() => {
@@ -396,6 +407,7 @@ export default function CoursesPage() {
   const filteredCourses = courses
     .filter((course) => {
       if (activeTab === "All") return true;
+      if (activeTab === "My Uploads") return course.userId === user?.id;
       const created = new Date(course.createdAt);
       const isRecent = created >= oneYearAgo;
       console.log(
@@ -444,6 +456,26 @@ export default function CoursesPage() {
 
   return (
     <div className="h-full w-full bg-[#F5F8FF] flex flex-col lg:flex-row lg:justify-between gap-4 font-hanken">
+      {/* Toast Notifications */}
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+            padding: "16px",
+            borderRadius: "10px",
+          },
+          success: {
+            iconTheme: {
+              primary: "#10B981",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
+
       {/* Left side - Courses list */}
       <div
         className={`bg-[#F5F8FF] mb-4 lg:mb-0 h-full ${
@@ -451,137 +483,85 @@ export default function CoursesPage() {
             ? "w-full"
             : "w-full"
         }`}>
-        {/* Simple tab filter */}
-        <div className="flex items-center justify-between mb-6">
-          {/* Tab filters */}
-          <div className="bg-white rounded-xl flex h-10">
-            {["All", "Recent", "Old"].map((tab) => (
-              <button
-                key={tab}
-                className={`py-2 px-3 lg:px-4 rounded-xl text-sm font-medium ${
-                  activeTab === tab
-                    ? "bg-[#CDDEFF] text-[#2E3135]"
-                    : "text-[#797B7E] hover:bg-white/50"
-                }`}
-                onClick={() => {
-                  const newTab = tab;
-                  setActiveTab(newTab);
-                  setShowAll(false); // Reset to show only 4 courses
+        {/* Tab Filter Component */}
+        <TabFilter
+          tabs={["All", "Recent", "Old", "My Uploads"]}
+          activeTab={activeTab}
+          onTabChange={(newTab) => {
+            setActiveTab(newTab);
+            setShowAll(false); // Reset to show only 4 courses
 
-                  // Auto-select first course in the new filtered list after state updates
-                  setTimeout(() => {
-                    const filtered = courses
-                      .filter((course) => {
-                        if (newTab === "All") return true;
-                        const created = new Date(course.createdAt);
-                        if (newTab === "Recent") return created >= oneYearAgo;
-                        if (newTab === "Old") return created < oneYearAgo;
-                        return true;
-                      })
-                      .filter((course) =>
-                        activeLevel === "All Levels"
-                          ? true
-                          : course.level === activeLevel
-                      )
-                      .filter((course) =>
-                        activeDepartment === "All Departments"
-                          ? true
-                          : course.department === activeDepartment
-                      );
+            // Auto-select first course in the new filtered list after state updates
+            setTimeout(() => {
+              const filtered = courses
+                .filter((course) => {
+                  if (newTab === "All") return true;
+                  if (newTab === "My Uploads")
+                    return course.userId === user?.id;
+                  const created = new Date(course.createdAt);
+                  if (newTab === "Recent") return created >= oneYearAgo;
+                  if (newTab === "Old") return created < oneYearAgo;
+                  return true;
+                })
+                .filter((course) =>
+                  activeLevel === "All Levels"
+                    ? true
+                    : course.level === activeLevel
+                )
+                .filter((course) =>
+                  activeDepartment === "All Departments"
+                    ? true
+                    : course.department === activeDepartment
+                );
 
-                    if (filtered.length > 0) {
-                      setSelectedCourse(filtered[0]);
-                      router.push(
-                        `/dashboard/courses?courseId=${filtered[0].id}`
-                      );
-                    } else {
-                      setSelectedCourse(null);
-                    }
-                  }, 0);
-                }}>
-                {tab}
-              </button>
-            ))}
-          </div>
+              if (filtered.length > 0) {
+                setSelectedCourse(filtered[0]);
+                router.push(`/dashboard/courses?courseId=${filtered[0].id}`);
+              } else {
+                setSelectedCourse(null);
+              }
+            }, 0);
+          }}
+          departments={departments}
+          levels={levels}
+          activeDepartment={activeDepartment}
+          activeLevel={activeLevel}
+          onDepartmentChange={setActiveDepartment}
+          onLevelChange={setActiveLevel}
+          onSearchClick={() => setIsSearchOpen(true)}
+          showSearch={true}
+        />
 
-          {/* Desktop: Category dropdown, Mobile: Search and Menu icons */}
-          <div className="flex items-center space-x-2">
-            {/* Search icon for mobile */}
-            <div className="block md:hidden">
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="bg-white w-10 h-10 flex items-center justify-center rounded-lg"
-                aria-label="Search courses">
-                <Search size={20} stroke="#2E3135" strokeWidth={1.5} />
-              </button>
-            </div>
-            {/* Menu icon for mobile */}
-            <div className="block md:hidden">
-              <div className="relative" ref={mobileDropdownRef}>
-                <button
-                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer"
-                  onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}>
-                  <Image
-                    src="/courses/filter.png"
-                    alt="Filter"
-                    width={24}
-                    height={24}
+        {/* Persistent info banner for "My Uploads" tab */}
+        {activeTab === "My Uploads" && !isCoursesLoading && (
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
-                </button>
-
-                {mobileFiltersOpen && (
-                  <div
-                    className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3"
-                    onClick={(e) => e.stopPropagation()}>
-                    <CustomDropdown
-                      options={departments}
-                      defaultOption={activeDepartment}
-                      onChange={setActiveDepartment}
-                    />
-                    <CustomDropdown
-                      options={levels}
-                      defaultOption={activeLevel}
-                      onChange={setActiveLevel}
-                    />
-                  </div>
-                )}
+                </svg>
               </div>
-            </div>
-
-            {/* Dropdown for desktop */}
-            <div className="hidden md:block">
-              <div className="relative" ref={desktopDropdownRef}>
-                <button
-                  className="bg-[#CDDEFF] w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer"
-                  onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}>
-                  <Image
-                    src="/courses/filter.png"
-                    alt="Filter"
-                    width={24}
-                    height={24}
-                  />
-                </button>
-
-                {mobileFiltersOpen && (
-                  <div
-                    className="absolute right-0 mt-2 z-50 bg-white rounded-lg shadow-lg p-4 w-64 space-y-3"
-                    onClick={(e) => e.stopPropagation()}>
-                    <CustomDropdown
-                      options={departments}
-                      defaultOption={activeDepartment}
-                      onChange={setActiveDepartment}
-                    />
-                    <CustomDropdown
-                      options={levels}
-                      defaultOption={activeLevel}
-                      onChange={setActiveLevel}
-                    />
-                  </div>
-                )}
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-purple-900 mb-1">
+                  Manage Your Uploads
+                </h4>
+                <p className="text-xs text-purple-700">
+                  You can edit or update your uploaded resources anytime. Click
+                  on any of your uploads to view details and make changes.
+                </p>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Course list with skeleton loading */}
         <div className="space-y-8">
@@ -595,12 +575,34 @@ export default function CoursesPage() {
                 <div className="flex flex-col items-center justify-center">
                   <BookOpen className="w-20 h-20 text-gray-300 mb-6" />
                   <h3 className="text-2xl font-semibold text-gray-700 mb-3">
-                    No Courses Available
+                    {activeTab === "My Uploads"
+                      ? "No Uploads Yet"
+                      : "No Courses Available"}
                   </h3>
-                  <p className="text-gray-500 text-base leading-relaxed">
-                    There are no courses matching your current filters. Try
-                    adjusting your search criteria.
+                  <p className="text-gray-500 text-base leading-relaxed mb-6">
+                    {activeTab === "My Uploads"
+                      ? "You haven't uploaded any resources yet. Share your knowledge with the community!"
+                      : "There are no courses matching your current filters. Try adjusting your search criteria."}
                   </p>
+                  {activeTab === "My Uploads" && (
+                    <button
+                      onClick={() => router.push("/dashboard/upload")}
+                      className="bg-[#FFB0E8] hover:bg-[#FFB0E8]/90 text-white px-6 py-3 rounded-xl font-medium transition-colors duration-200 flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Upload Your First Resource
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -617,7 +619,7 @@ export default function CoursesPage() {
             ).map((course) => (
               <div
                 key={course.id}
-                className={`px-4 py-3 border rounded-xl cursor-pointer w-full ${
+                className={`px-4 py-3 border rounded-xl cursor-pointer w-full relative ${
                   selectedCourse?.id === course.id
                     ? "border-2 border-[#FFB0E8] bg-white"
                     : "border-none hover:bg-gray-50 bg-white"
@@ -850,63 +852,156 @@ export default function CoursesPage() {
                 </span>
               </div>
 
-              <div className="mt-3 flex items-center space-x-3 mb-3 ">
-                {(() => {
-                  console.log(
-                    "[DEBUG RENDER] isUploaderLoading:",
-                    isUploaderLoading
-                  );
-                  console.log(
-                    "[DEBUG RENDER] uploaderAvatarUrl:",
-                    uploaderAvatarUrl
-                  );
-                  console.log("[DEBUG RENDER] uploader:", uploader);
-                  return null;
-                })()}
-                {isUploaderLoading ? (
-                  <>
-                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
-                    <div className="w-32 h-4 rounded bg-gray-200 animate-pulse" />
-                  </>
-                ) : (
-                  <>
-                    {uploaderAvatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={uploaderAvatarUrl}
-                        alt={
-                          uploader?.full_name ??
-                          uploader?.display_name ??
-                          "Uploader"
-                        }
-                        width={40}
-                        height={40}
-                        className="rounded-full w-10 h-10 object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center font-semibold">
-                        {(
-                          (uploader?.display_name ??
+              <div className="mt-3 flex items-center justify-between mb-3">
+                {/* Left side - Uploader info */}
+                <div className="flex items-center space-x-3">
+                  {(() => {
+                    console.log(
+                      "[DEBUG RENDER] isUploaderLoading:",
+                      isUploaderLoading
+                    );
+                    console.log(
+                      "[DEBUG RENDER] uploaderAvatarUrl:",
+                      uploaderAvatarUrl
+                    );
+                    console.log("[DEBUG RENDER] uploader:", uploader);
+                    return null;
+                  })()}
+                  {isUploaderLoading ? (
+                    <>
+                      <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+                      <div className="w-32 h-4 rounded bg-gray-200 animate-pulse" />
+                    </>
+                  ) : (
+                    <>
+                      {uploaderAvatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={uploaderAvatarUrl}
+                          alt={
                             uploader?.full_name ??
-                            uploader?.email) ||
-                          (selectedCourse?.userId ?? "U")
-                        )
-                          .toString()
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </div>
-                    )}
+                            uploader?.display_name ??
+                            "Uploader"
+                          }
+                          width={40}
+                          height={40}
+                          className="rounded-full w-10 h-10 object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center font-semibold">
+                          {(
+                            (uploader?.display_name ??
+                              uploader?.full_name ??
+                              uploader?.email) ||
+                            (selectedCourse?.userId ?? "U")
+                          )
+                            .toString()
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                      )}
 
-                    <div>
-                      <div className="text-sm font-medium text-[#2E3135]">
-                        {uploader?.full_name ??
-                          uploader?.display_name ??
-                          uploader?.email ??
-                          "Uploader"}
+                      <div>
+                        <div className="text-sm font-medium text-[#2E3135]">
+                          {uploader?.full_name ??
+                            uploader?.display_name ??
+                            uploader?.email ??
+                            "Uploader"}
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
+                    </>
+                  )}
+                </div>
+
+                {/* Right side - Action buttons */}
+                <div className="flex items-center gap-2">
+                  {/* Edit button - only show for user's own courses */}
+                  {selectedCourse?.userId === user?.id && (
+                    <button
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(
+                          `/dashboard/courses/edit/${selectedCourse.id}`
+                        );
+                      }}
+                      title="Edit this resource"
+                      type="button">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+
+                  {/* Bookmark button - shows for all courses */}
+                  <button
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      bookmarkedCourses.has(selectedCourse?.id || "")
+                        ? "bg-gray-800 hover:bg-gray-900 text-white"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (selectedCourse) {
+                        const isCurrentlyBookmarked = bookmarkedCourses.has(
+                          selectedCourse.id
+                        );
+
+                        setBookmarkedCourses((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(selectedCourse.id)) {
+                            newSet.delete(selectedCourse.id);
+                          } else {
+                            newSet.add(selectedCourse.id);
+                          }
+                          return newSet;
+                        });
+
+                        // Show toast notification
+                        if (isCurrentlyBookmarked) {
+                          toast.success("Removed from Collection", {
+                            icon: "🗑️",
+                          });
+                        } else {
+                          toast.success("Saved to Collection", {
+                            icon: "📚",
+                          });
+                        }
+                      }
+                    }}
+                    title={
+                      bookmarkedCourses.has(selectedCourse?.id || "")
+                        ? "Remove from collection"
+                        : "Save to collection"
+                    }
+                    type="button">
+                    <svg
+                      className="w-5 h-5"
+                      fill={
+                        bookmarkedCourses.has(selectedCourse?.id || "")
+                          ? "currentColor"
+                          : "none"
+                      }
+                      stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div className="mb-4">

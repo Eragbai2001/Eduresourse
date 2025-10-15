@@ -121,13 +121,13 @@ export default function Sidebar() {
           icon={<GraduationCap size={20} />}
           text="Students"
           isActive={pathname === "/dashboard/students"}
-        />
-        <SidebarLink
-          href="/dashboard/financials"
-          icon={<DollarSign size={20} />}
-          text="Financials"
-          isActive={pathname === "/dashboard/financials"}
         /> */}
+        <SidebarLink
+          href="/dashboard/collection"
+          icon={<Bookmark size={20} />}
+          text="Collection"
+          isActive={pathname === "/dashboard/collection"}
+        />
       </div>
 
       {/* Upgrade card - centered with flex, hidden on smaller screens and tablet */}
