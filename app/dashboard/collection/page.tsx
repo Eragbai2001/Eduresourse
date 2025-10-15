@@ -171,15 +171,22 @@ export default function CollectionPage() {
   );
 
   // Filter bookmarked courses - use useMemo to ensure proper recalculation
-  const savedCourses = React.useMemo(() => {
+  const savedCourses = React.useMemo((): CourseWithUploader[] => {
     // Use coursesWithUploaders if available, otherwise fall back to courses
-    const sourceData = coursesWithUploaders.length > 0 ? coursesWithUploaders : courses;
-    
+    const sourceData =
+      coursesWithUploaders.length > 0 ? coursesWithUploaders : courses;
+
     console.log("[Collection] useMemo recalculating...");
-    console.log("[Collection] - Using source:", coursesWithUploaders.length > 0 ? "coursesWithUploaders" : "courses");
+    console.log(
+      "[Collection] - Using source:",
+      coursesWithUploaders.length > 0 ? "coursesWithUploaders" : "courses"
+    );
     console.log("[Collection] - Source data length:", sourceData.length);
-    console.log("[Collection] - Bookmarked IDs:", Array.from(bookmarkedCourses));
-    
+    console.log(
+      "[Collection] - Bookmarked IDs:",
+      Array.from(bookmarkedCourses)
+    );
+
     const filtered = sourceData
       .filter((course) => bookmarkedCourses.has(course.id))
       .filter((course) =>
@@ -192,7 +199,12 @@ export default function CollectionPage() {
       );
 
     console.log("[Collection] - Filtered result:", filtered.length, "courses");
-    console.log("[Collection] - Active filters - Level:", activeLevel, "Dept:", activeDepartment);
+    console.log(
+      "[Collection] - Active filters - Level:",
+      activeLevel,
+      "Dept:",
+      activeDepartment
+    );
 
     return filtered;
   }, [
