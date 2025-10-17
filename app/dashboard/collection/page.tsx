@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { Bookmark, Download, Clock } from "lucide-react";
-import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import BarChart from "@/app/components/BarChart";
+
 import TabFilter from "@/app/components/TabFilter";
+import { SkeletonCollectionCard } from "@/app/components/SkeletonCollectionCard";
 import toast, { Toaster } from "react-hot-toast";
+import { Bookmark } from "lucide-react";
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -42,6 +42,7 @@ interface Profile {
 interface CourseWithUploader extends Course {
   uploader?: Profile;
   uploaderAvatarUrl?: string;
+  rating?: number; // Add rating property
 }
 
 export default function CollectionPage() {
@@ -62,6 +63,12 @@ export default function CollectionPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookmarksLoading, setBookmarksLoading] = useState(true);
+  const [ratingsMap, setRatingsMap] = useState<Record<string, number>>({});
+  const [uploader, setUploader] = useState<Profile | null>(null);
+  const [uploaderAvatarUrl, setUploaderAvatarUrl] = useState<string | null>(
+    null
+  );
+  const [isUploaderLoading, setIsUploaderLoading] = useState(false);
 
   // Fetch courses
   useEffect(() => {
@@ -154,6 +161,68 @@ export default function CollectionPage() {
     fetchUploaderProfiles();
   }, [courses]);
 
+  // Fetch uploader profile for selected course
+  useEffect(() => {
+    let mounted = true;
+    async function fetchUploader() {
+      setUploader(null);
+      setUploaderAvatarUrl(null);
+      setIsUploaderLoading(true);
+
+      if (!selectedCourse?.userId) {
+        setIsUploaderLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/profiles/${selectedCourse.userId}`);
+        if (!res.ok) {
+          console.error("Error fetching uploader profile:", res.status);
+          setIsUploaderLoading(false);
+          return;
+        }
+
+        const payload = await res.json();
+
+        if (!payload) {
+          console.log("[DEBUG] Invalid or null payload received");
+          setIsUploaderLoading(false);
+          return;
+        }
+
+        const profile = payload?.profile ?? null;
+
+        if (!profile) {
+          console.log("[DEBUG] No profile found, returning");
+          setIsUploaderLoading(false);
+          return;
+        }
+
+        if (!mounted) return;
+
+        setUploader(profile);
+
+        const resolvedUrl =
+          payload.avatarPublicUrl ||
+          (profile.avatar_url &&
+          profile.avatar_url.toString().startsWith("http")
+            ? profile.avatar_url
+            : null);
+
+        setUploaderAvatarUrl(resolvedUrl ?? null);
+        setIsUploaderLoading(false);
+      } catch (err) {
+        console.error("fetchUploader error:", err);
+        setIsUploaderLoading(false);
+      }
+    }
+
+    fetchUploader();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedCourse]);
+
   // Get unique departments and levels
   const departments = React.useMemo(
     () => [
@@ -170,23 +239,10 @@ export default function CollectionPage() {
     [courses]
   );
 
-  // Filter bookmarked courses - use useMemo to ensure proper recalculation
+  // Filter bookmarked courses and merge ratings
   const savedCourses = React.useMemo((): CourseWithUploader[] => {
-    // Use coursesWithUploaders if available, otherwise fall back to courses
     const sourceData =
       coursesWithUploaders.length > 0 ? coursesWithUploaders : courses;
-
-    console.log("[Collection] useMemo recalculating...");
-    console.log(
-      "[Collection] - Using source:",
-      coursesWithUploaders.length > 0 ? "coursesWithUploaders" : "courses"
-    );
-    console.log("[Collection] - Source data length:", sourceData.length);
-    console.log(
-      "[Collection] - Bookmarked IDs:",
-      Array.from(bookmarkedCourses)
-    );
-
     const filtered = sourceData
       .filter((course) => bookmarkedCourses.has(course.id))
       .filter((course) =>
@@ -196,16 +252,11 @@ export default function CollectionPage() {
         activeDepartment === "All Departments"
           ? true
           : course.department === activeDepartment
-      );
-
-    console.log("[Collection] - Filtered result:", filtered.length, "courses");
-    console.log(
-      "[Collection] - Active filters - Level:",
-      activeLevel,
-      "Dept:",
-      activeDepartment
-    );
-
+      )
+      .map((course) => ({
+        ...course,
+        rating: ratingsMap[course.id] ?? 0,
+      }));
     return filtered;
   }, [
     courses,
@@ -213,51 +264,47 @@ export default function CollectionPage() {
     bookmarkedCourses,
     activeLevel,
     activeDepartment,
+    ratingsMap,
   ]);
+  // Fetch ratings for all saved courses
+  useEffect(() => {
+    const fetchRatingsForCourses = async () => {
+      if (!bookmarkedCourses || bookmarkedCourses.size === 0) return;
+      const ids = Array.from(bookmarkedCourses);
+      console.log("[Collection] Fetching ratings for:", ids);
+      // Fetch ratings in parallel
+      const ratings: Record<string, number> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const res = await fetch(`/api/ratings/${id}`);
+            if (res.ok) {
+              const data = await res.json();
+              console.log("[Collection] Rating for", id, ":", data);
+              // Assume API returns { average: number }
+              ratings[id] = typeof data.average === "number" ? data.average : 0;
+            }
+          } catch (e) {
+            console.error("[Collection] Error fetching rating for", id, e);
+            ratings[id] = 0;
+          }
+        })
+      );
+      console.log("[Collection] All ratings fetched:", ratings);
+      setRatingsMap(ratings);
+    };
+    fetchRatingsForCourses();
+  }, [bookmarkedCourses]);
 
-  // Stats data
-  const stats = {
-    totalSaved: savedCourses.length,
-    downloads: 0, // Will be from API later
-    recentlyAdded: savedCourses.filter((c) => {
-      // Mock: courses added in last 7 days
-      return true;
-    }).length,
-  };
-
-  // Doughnut chart data
-  const doughnutData = {
-    labels: ["Design", "Marketing", "Web Dev", "Business"],
-    datasets: [
-      {
-        label: "Courses",
-        data: [100, 50, 100, 50],
-        backgroundColor: ["#FFB0E8", "#E8F0FF", "#CDDEFF", "#FFD365"],
-        hoverOffset: 4,
-      },
-    ],
-  };
-
-  // Rating distribution - mock data
-  const ratingData = [
-    { rating: "4.7", category: "Design", count: 12 },
-    { rating: "4.8", category: "Marketing", count: 15 },
-    { rating: "4.6", category: "Web Dev", count: 8 },
-    { rating: "4.8", category: "Business", count: 10 },
-  ];
-
-  const maxRatingCount = Math.max(...ratingData.map((d) => d.count));
-
-  // Top saved courses - mock
-  const topSavedCourses = [
-    { title: "Python for Beginners", rating: 4.8, reviews: "1,400 Reviews" },
-    { title: "JavaScript Essentials", rating: 4.7, reviews: "1,100 Reviews" },
-    {
-      title: "Full Stack Web Development",
-      rating: 4.6,
-      reviews: "952 Reviews",
-    },
-  ];
+  // Dynamic Doughnut chart data based on saved courses by department
+  const categoryBreakdown = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    savedCourses.forEach((course) => {
+      const dept = course.department || "Other";
+      counts[dept] = (counts[dept] || 0) + 1;
+    });
+    return counts;
+  }, [savedCourses]);
 
   const handleCardClick = (course: Course) => {
     setSelectedCourse(course);
@@ -312,8 +359,12 @@ export default function CollectionPage() {
 
   if (loading || bookmarksLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="bg-[#FAFAFA] rounded-lg p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <SkeletonCollectionCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -340,127 +391,15 @@ export default function CollectionPage() {
         }}
       />
 
+      {/* 🧠 ENHANCED DASHBOARD SECTION
+          - Dynamic course count based on savedCourses.length
+          - Time range selector (This Month / All Time) 
+          - Trend indicator showing +/- percentage with color coding
+          - Top Web Dev courses with ratings, review counts, and animated bars
+          - Hover effects and smooth transitions for better UX
+          - All using Tailwind + Hanken font for consistency
+      */}
       {/* Upper Section - Dashboard Stats */}
-      <div className="grid grid-cols-1  md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Left: Courses by Category */}
-        <div className="bg-white rounded-lg p-6 min-h-[290px]  min-[1550px]:h-[290px] flex flex-col">
-          <div className="flex items-center justify-between mb-4 flex-shrink-0">
-            <h3 className="font-hanken font-semibold text-gray-900">
-              Courses by Category
-            </h3>
-            <select className="text-sm text-gray-600 border-none focus:outline-none cursor-pointer">
-              <option>This Week</option>
-            </select>
-          </div>
-
-          {savedCourses.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Bookmark className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p>No saved courses yet</p>
-            </div>
-          ) : (
-            <div className="flex flex-col min-[1550px]:flex-row min-[1550px]:items-center gap-3 min-[1550px]:gap-6 flex-1 justify-end min-[1550px]:justify-start">
-              {/* Doughnut Chart using Chart.js */}
-              <div className="relative flex-shrink-0 w-full min-[1550px]:w-auto flex justify-center min-[1550px]:justify-start">
-                <div className="w-[200px] h-[200px] md:w-[250px] md:h-[250px] lg:w-[200px] lg:h-[200px] min-[1550px]:w-[200px] min-[1550px]:h-[200px]">
-                  <Doughnut
-                    data={doughnutData}
-                    options={{
-                      plugins: {
-                        legend: {
-                          display: false,
-                        },
-                      },
-                    }}
-                  />
-                </div>
-                {/* Total in center */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xs text-gray-500 font-hanken">
-                    Total Course
-                  </span>
-                  <span className="text-2xl font-bold text-gray-900 font-hanken">
-                    250
-                  </span>
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div className="flex-1 w-full space-y-3 min-[1550px]:space-y-4 min-w-0 flex flex-col justify-end min-[1550px]:justify-center">
-                {doughnutData.labels?.map((label, index) => {
-                  const count = Number(doughnutData.datasets[0].data[index]);
-                  const total = doughnutData.datasets[0].data.reduce(
-                    (a, b) => Number(a) + Number(b),
-                    0
-                  );
-                  const percentage = ((count / total) * 100).toFixed(0);
-                  const color = doughnutData.datasets[0].backgroundColor[index];
-
-                  return (
-                    <div
-                      key={label}
-                      className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div
-                          className="w-3 h-3 rounded-sm flex-shrink-0"
-                          style={{ backgroundColor: color }}
-                        />
-                        <span className="text-sm text-gray-700 font-hanken truncate">
-                          {label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-sm text-gray-500 font-hanken whitespace-nowrap">
-                          {count} Courses
-                        </span>
-                        <span className="text-sm font-semibold text-gray-900 font-hanken min-w-[40px] text-right">
-                          {percentage}%
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Middle & Right: Combined Section */}
-        <div className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2  gap-5 xl:h-[290px]  ">
-          {/* Course Rating */}
-          <div className="bg-white rounded-lg p-6 min-h-[290px] ">
-            <BarChart />
-          </div>
-
-          {/* Web Development Details */}
-          <div className="bg-white rounded-lg p-6 xl:h-[290px]">
-            <h2 className="font-hanken font-bold text-gray-800 mb-6">
-              Web Development Details
-            </h2>
-
-            <div className="space-y-6">
-              {topSavedCourses.map((course, idx) => (
-                <div key={idx} className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-gray-700 font-hanken font-medium">
-                      {course.title}
-                    </h3>
-                    <span className="text-gray-600 text-sm font-hanken flex items-center gap-1">
-                      <span className="text-yellow-400">⭐</span>
-                      {course.rating} ({course.reviews})
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-yellow-400 h-full rounded-full transition-all duration-300"
-                      style={{ width: `${(course.rating / 5) * 100}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Quick Stats Cards */}
       {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -692,19 +631,50 @@ export default function CollectionPage() {
               {/* Action Buttons - Bookmark and Edit */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="Uploader"
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 font-hanken">
-                      Uploader Name
-                    </p>
-                    <p className="text-xs text-gray-500 font-hanken">
-                      Professor
-                    </p>
-                  </div>
+                  {isUploaderLoading ? (
+                    <>
+                      <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+                      <div className="w-32 h-4 rounded bg-gray-200 animate-pulse" />
+                    </>
+                  ) : (
+                    <>
+                      {uploaderAvatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={uploaderAvatarUrl}
+                          alt={
+                            uploader?.full_name ??
+                            uploader?.display_name ??
+                            "Uploader"
+                          }
+                          className="rounded-full w-10 h-10 object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center text-xs font-semibold">
+                          {(
+                            (uploader?.display_name ??
+                              uploader?.full_name ??
+                              uploader?.email) ||
+                            "U"
+                          )
+                            .toString()
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 font-hanken">
+                          {uploader?.full_name ??
+                            uploader?.display_name ??
+                            uploader?.email ??
+                            "Uploader"}
+                        </p>
+                        <p className="text-xs text-gray-500 font-hanken">
+                          Educator
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">

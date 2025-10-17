@@ -29,14 +29,14 @@ export async function GET(req: NextRequest) {
         count: 0,
         average: null,
       };
-      return NextResponse.json({
+       return NextResponse.json({
         count: Number(row.count || 0),
-        average: row.average ? Number(row.average) : null,
+        average: row.average !== null && row.average !== undefined ? Number(row.average) : 0,
       });
     } catch (qerr: unknown) {
       // If the ratings table doesn't exist yet, return empty aggregate instead of 500
       const msg = qerr instanceof Error ? qerr.message : String(qerr);
-      if (
+                  if (
         msg.includes("does not exist") ||
         msg.includes('relation "public.ratings"')
       ) {

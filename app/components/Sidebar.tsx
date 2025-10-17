@@ -10,6 +10,7 @@ import {
   // Calendar,
   // FileText,
   Bookmark,
+  BookOpen,
   Users,
   // GraduationCap,
   // DollarSign,
@@ -106,7 +107,7 @@ export default function Sidebar() {
 
         <SidebarLink
           href="/dashboard/courses"
-          icon={<Bookmark size={20} />}
+          icon={<BookOpen size={20} />}
           text="Courses"
           isActive={pathname === "/dashboard/courses"}
         />
