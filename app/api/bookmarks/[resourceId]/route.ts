@@ -6,9 +6,10 @@ import prisma from "@/lib/prisma";
 // DELETE /api/bookmarks/[resourceId] - Remove a bookmark
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { resourceId: string } }
+  { params }: { params: Promise<{ resourceId: string }> }
 ) {
   try {
+    const { resourceId } = await params;
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,8 +30,6 @@ export async function DELETE(
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { resourceId } = params;
 
     if (!resourceId) {
       return NextResponse.json(

@@ -916,16 +916,16 @@ export default function CoursesPage() {
 
                 {/* Right side - Action buttons */}
                 <div className="flex items-center gap-2">
-                  {/* Edit button - only show for user's own courses */}
-                  {selectedCourse?.userId === user?.id && (
-                    <button
-                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all duration-200"
+                    {/* Edit button - only show for user's own courses */}
+                    {selectedCourse?.userId === user?.id && (
+                    <div className="relative group">
+                      <button
+                      className="p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer bg-gray-50 text-gray-700 hover:bg-gray-100 ring-1 ring-gray-200"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(
-                          `/dashboard/courses/edit/${selectedCourse.id}`
-                        );
+                        router.push(`/dashboard/courses/edit/${selectedCourse.id}`);
                       }}
+                      aria-label="Edit this resource"
                       title="Edit this resource"
                       type="button">
                       <svg
@@ -934,98 +934,104 @@ export default function CoursesPage() {
                         stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                        />
-                      </svg>
-                    </button>
-                  )}
-
-                  {/* Bookmark button - shows for all courses */}
-                  <button
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      bookmarkedCourses.has(selectedCourse?.id || "")
-                        ? "bg-gray-800 hover:bg-gray-900 text-white"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                    }`}
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      if (selectedCourse) {
-                        const isCurrentlyBookmarked = bookmarkedCourses.has(
-                          selectedCourse.id
-                        );
-
-                        try {
-                          if (isCurrentlyBookmarked) {
-                            // Remove bookmark
-                            const response = await fetch(
-                              `/api/bookmarks/${selectedCourse.id}`,
-                              { method: "DELETE" }
-                            );
-                            if (response.ok) {
-                              setBookmarkedCourses((prev) => {
-                                const newSet = new Set(prev);
-                                newSet.delete(selectedCourse.id);
-                                return newSet;
-                              });
-                              toast.success("Removed from Collection", {
-                                icon: "🗑️",
-                              });
-                            }
-                          } else {
-                            // Add bookmark
-                            const response = await fetch("/api/bookmarks", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                resourceId: selectedCourse.id,
-                              }),
-                            });
-                            if (response.ok) {
-                              setBookmarkedCourses((prev) => {
-                                const newSet = new Set(prev);
-                                newSet.add(selectedCourse.id);
-                                return newSet;
-                              });
-                              toast.success("Saved to Collection", {
-                                icon: "�",
-                              });
-                            }
-                          }
-                        } catch (error) {
-                          console.error(
-                            "[Bookmark] Error toggling bookmark:",
-                            error
-                          );
-                          toast.error("Failed to update bookmark");
-                        }
-                      }
-                    }}
-                    title={
-                      bookmarkedCourses.has(selectedCourse?.id || "")
-                        ? "Remove from collection"
-                        : "Save to collection"
-                    }
-                    type="button">
-                    <svg
-                      className="w-5 h-5"
-                      fill={
-                        bookmarkedCourses.has(selectedCourse?.id || "")
-                          ? "currentColor"
-                          : "none"
-                      }
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                      </button>
+
+                      {/* Tooltip */}
+                      <div className="pointer-events-none absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20">
+                      <div className="relative bg-white border border-gray-200 text-gray-700 text-xs rounded-lg px-3 py-1.5 shadow-lg whitespace-nowrap">
+                        Edit this resource
+                        <div className="absolute -bottom-1 right-3 w-2 h-2 bg-white border-r border-b border-gray-200 rotate-45"></div>
+                      </div>
+                      </div>
+                    </div>
+                    )}
+
+                    {/* Bookmark button with light tooltip */}
+                    <div className="relative group">
+                      <button
+                      className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${
+                      bookmarkedCourses.has(selectedCourse?.id || "")
+                      ? "bg-[#FFB0E8]/20 text-[#C026D3] hover:bg-[#FFB0E8]/30 ring-1 ring-[#FFB0E8]/40"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100 ring-1 ring-gray-200"
+                      }`}
+                      onClick={async (e) => {
+                      e.stopPropagation();
+                      if (selectedCourse) {
+                      const isCurrentlyBookmarked = bookmarkedCourses.has(selectedCourse.id);
+
+                      try {
+                        if (isCurrentlyBookmarked) {
+                        // Remove bookmark
+                        const response = await fetch(`/api/bookmarks/${selectedCourse.id}`, { method: "DELETE" });
+                        if (response.ok) {
+                        setBookmarkedCourses((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.delete(selectedCourse.id);
+                        return newSet;
+                        });
+                        toast.success("Removed from Collection", { icon: "🗑️" });
+                        }
+                        } else {
+                        // Add bookmark
+                        const response = await fetch("/api/bookmarks", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ resourceId: selectedCourse.id }),
+                        });
+                        if (response.ok) {
+                        setBookmarkedCourses((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.add(selectedCourse.id);
+                        return newSet;
+                        });
+                        toast.success("Saved to Collection", { icon: "⭐" });
+                        }
+                        }
+                      } catch (error) {
+                        console.error("[Bookmark] Error toggling bookmark:", error);
+                        toast.error("Failed to update bookmark");
+                      }
+                      }
+                      }}
+                      aria-label={
+                      bookmarkedCourses.has(selectedCourse?.id || "")
+                      ? "Remove from collection"
+                      : "Save for later"
+                      }
+                      aria-pressed={bookmarkedCourses.has(selectedCourse?.id || "") ? "true" : "false"}
+                      type="button"
+                      >
+                      <svg
+                      className="w-5 h-5"
+                      fill={bookmarkedCourses.has(selectedCourse?.id || "") ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      >
+                      <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
                       />
-                    </svg>
-                  </button>
+                      </svg>
+                      </button>
+
+                      {/* Tooltip */}
+                      <div className="pointer-events-none absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20">
+                      <div className="relative bg-white border border-gray-200 text-gray-700 text-xs rounded-lg px-3 py-1.5 shadow-lg whitespace-nowrap">
+                      {bookmarkedCourses.has(selectedCourse?.id || "")
+                      ? "Remove from collection"
+                      : "Save for later"}
+                      <div className="absolute -bottom-1 right-3 w-2 h-2 bg-white border-r border-b border-gray-200 rotate-45"></div>
+                      </div>
+                      </div>
+                    </div>
                 </div>
               </div>
 
