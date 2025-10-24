@@ -6,6 +6,7 @@ import NextTopLoader from "nextjs-toploader"; // Correctly imported
 import Header from "@/app/components/Header";
 import SmallScreenHeader from "@/app/components/SmallScreenHeader";
 import Sidebar from "@/app/components/Sidebar";
+import { DashboardSidebar } from "../components/dashboard-sidebar";
 
 // Function to generate page title and subtitle from pathname
 function getPageInfo(pathname: string) {
@@ -82,13 +83,17 @@ export default function DashboardLayout({
 
         <div className="flex-1 flex flex-col w-full">
           {/* Original header (visible at md and above) */}
-          <div className="hidden md:block md:sticky md:top-0 md:z-30">
+          <div className="hidden md:block md:sticky md:top-0 md:z-30 gap-10">
             <Header
               title={title}
               subtitle={subtitle}
               dashboardColor={dashboardColor}
               pageColor={pageColor}
             />
+
+            <div className="hidden 2xl:block fixed top-0 right-0 h-screen w-[400px] ">
+              <DashboardSidebar />
+            </div>
           </div>
 
           {/* Small screen header (visible only on mobile) */}

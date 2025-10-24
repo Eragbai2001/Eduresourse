@@ -483,6 +483,8 @@ export default function CollectionPage() {
                               ""
                             }
                             className="rounded-full w-8 h-8 object-cover"
+                            loading="eager"
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center text-xs font-semibold">

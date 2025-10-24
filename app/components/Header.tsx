@@ -4,6 +4,7 @@ import { Bell, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import SearchBar from "./SearchBar";
+import { DashboardSidebar } from "./dashboard-sidebar";
 
 interface HeaderProps {
   title: string;
@@ -114,9 +115,9 @@ export default function Header({
   };
 
   return (
-    <header className="h-16 bg-[#F5F8FF] px-6 items-center max-md:hidden md:flex ">
+    <header className="h-16 bg-[#F5F8FF] px-6 items-center max-md:hidden md:flex max-w-7xl gap-10 min-[1535px]:max-[1900px]:pr-[390px] ">
       {/* Left section containing title, welcome message and search bar */}
-      <div className="flex-1 flex items-center justify-between ">
+      <div className="flex-1 flex items-center justify-between max-w-7xl  ">
         {/* Title and subtitle */}
         <div>
           <h1 className="text-2xl font-bold text-gray-800 font-hanken">
@@ -137,8 +138,9 @@ export default function Header({
         />
       </div>
 
-      {/* Right section containing profile, notifications and settings */}
-      <div className="flex items-center justify-center pl-3.5 py-2 rounded-lg space-x-2">
+
+            {/* Right section containing profile, notifications and settings */}
+   <div className="flex 2xl:hidden items-center justify-center pl-3.5 py-2 rounded-lg space-x-2">
         {/* Profile */}
         <div className="flex items-center">
           {loading ? (
@@ -209,6 +211,9 @@ export default function Header({
           )}
         </div>
       </div>
+
+
+      
     </header>
   );
 }

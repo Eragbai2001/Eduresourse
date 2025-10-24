@@ -1,50 +1,65 @@
-import StatCard from "@/app/components/StatCard";
+"use client";
+import { EnrollmentTrendsChart } from "../components/enrollment-trends-chart";
+import { RevenueChart } from "../components/revenue-charts";
+import { StatCardsGrid } from "../components/stat-cards-grid";
+import { RecentCoursesSection } from "../components/RecentCoursesSection";
+import LearningActivity from "../components/LearningActivity";
+import { TopCourses } from "../components/top-courses";
+import { DashboardSidebar } from "../components/dashboard-sidebar";
+import { Calendar } from "../components/calendar";
+import { Schedule } from "../components/schedule";
+import { RecentActivities } from "../components/recent-activities";
+import LearningActivityHeatmap from "../components/LearningActivity";
+import ActivityHeatmap from "../components/ActivityHeatmap";
+
+const xLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const yLabels = ["9am","10am","11am","12pm","1pm","2pm","3pm"];
+const values = [
+  [0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0],
+  [0,50,100,150,150,100,0],
+  [0,100,150,200,150,100,0],
+  [0,100,150,150,100,50,0],
+  [0,0,50,100,100,0,0],
+  [0,0,0,0,0,0,0],
+];
 
 
-
-
-export default async function DashboardPage() {
-
+export default function Dashboard() {
   return (
-    <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
-        <StatCard
-          title="Total Students"
-          value="1,284"
-          change="+12.5%"
-          isPositive={true}
-        />
-        <StatCard
-          title="Course Enrollments"
-          value="3,567"
-          change="+8.2%"
-          isPositive={true}
-        />
-        <StatCard
-          title="Average Completion"
-          value="76.2%"
-          change="-2.4%"
-          isPositive={false}
-        />
-        <StatCard
-          title="Revenue"
-          value="$35,268"
-          change="+18.6%"
-          isPositive={true}
-        />
-      </div>
+    <main className="min-h-screen bg-[#F5F8FF] font-hanken">
+      {/* Main Content Area */}
+      <div className="flex-1 2xl:mr-[400px] ">
+        <div className="max-w-7xl mx-auto">
+          {/* Stat Cards */}
+          <StatCardsGrid />
 
-      <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-        <h2 className="text-lg font-semibold mb-4 font-hanken">
-          Recent Activity
-        </h2>
-        <div className="space-y-4">
-          {/* Activity items would go here */}
-          <p className="font-hanken text-gray-600">
-            No recent activity to display.
-          </p>
+          {/* Calendar & Schedule Grid - Only visible below 1700px */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 2xl:hidden">
+            <Calendar />
+            <Schedule />
+            <div className="md:col-span-2 xl:col-span-1">
+              <RecentActivities />
+            </div>
+          </div>
+
+          {/* Top Courses & Enrollment Trends */}
+          <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TopCourses />
+            <EnrollmentTrendsChart />
+          </div>
+
+          {/* Recent Courses Section */}
+            <div className="mt-12 grid grid-cols-3 gap-6">
+            <ActivityHeatmap data={values} xLabels={xLabels} yLabels={yLabels} />
+            <div className="col-span-2">
+              <RecentCoursesSection />
+            </div>
+            </div>
         </div>
       </div>
-    </div>
+
+   
+    </main>
   );
 }
