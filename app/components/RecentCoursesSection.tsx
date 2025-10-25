@@ -46,10 +46,10 @@ export function RecentCoursesSection() {
         const response = await fetch("/api/resources");
         if (response.ok) {
           const data: Course[] = await response.json();
-          
+
           // Get the 3 most recent courses
           const recentCourses = data.slice(0, 3);
-          
+
           // Fetch uploader profiles for these courses
           const coursesWithData = await Promise.all(
             recentCourses.map(async (course) => {
@@ -80,7 +80,7 @@ export function RecentCoursesSection() {
               return { ...course, uploader: null, uploaderAvatarUrl: null };
             })
           );
-          
+
           setCourses(coursesWithData);
         }
       } catch (error) {
@@ -99,22 +99,29 @@ export function RecentCoursesSection() {
 
   if (loading) {
     return (
-      <div className="mt-12 bg-white p-4">
+      <div className="mt-12 bg-white p-4 rounded-2xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900 font-hanken">
             New Courses
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg overflow-hidden animate-pulse">
-              <div className="h-48 bg-gray-200" />
-              <div className="p-4">
-                <div className="h-4 bg-gray-200 rounded mb-2" />
-                <div className="h-6 bg-gray-200 rounded mb-2" />
+            <div
+              key={i}
+              className="rounded-lg overflow-hidden bg-white animate-pulse">
+              {/* Cover skeleton - match real card height */}
+              <div className="relative h-36 w-full bg-gray-200" />
+
+              {/* Content skeleton - match real card padding */}
+              <div className="p-3">
+                <div className="h-3 bg-gray-200 rounded mb-2 w-24" />
+                <div className="h-5 bg-gray-200 rounded mb-2 w-full" />
+
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-200" />
-                  <div className="h-4 bg-gray-200 rounded flex-1" />
+                  <div className="w-7 h-7 rounded-full bg-gray-200" />
+                  <div className="h-3 bg-gray-200 rounded flex-1" />
                 </div>
               </div>
             </div>
@@ -129,34 +136,31 @@ export function RecentCoursesSection() {
   }
 
   return (
-    <div className=" bg-white p-4 ">
+    <div className="bg-white p-4 rounded-2xl max-h-[340px] min-h-[220px] overflow-hidden">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900 font-hanken">
           New Courses
         </h2>
         <button
           onClick={() => router.push("/dashboard/courses")}
-          className="text-[#535559] font-medium text-sm font-hanken transition-colors"
-        >
+          className="text-[#535559] font-medium text-sm font-hanken transition-colors">
           This Week →
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {courses.map((course) => (
           <div
             key={course.id}
             onClick={() => handleCardClick(course)}
-            className="bg-white rounded-lg overflow-hidden cursor-pointer transition-shadow duration-300"
-          >
+            className="bg-white rounded-lg overflow-hidden cursor-pointer transition-shadow duration-300">
             {/* Course Cover */}
             <div
-              className="relative h-48 w-full rounded-lg overflow-hidden flex items-center justify-center"
+              className="relative h-36 w-full rounded-lg overflow-hidden flex items-center justify-center"
               style={{
                 background: course.coverColor || "#FFB0E8",
-              }}
-            >
-              <span className="text-3xl font-bold text-white select-none">
+              }}>
+              <span className="text-2xl font-bold text-white select-none">
                 {(course.title || "COURSE").slice(0, 6).toUpperCase()}
               </span>
               <span className="absolute top-3 left-3 px-3 py-1 bg-white rounded-full text-xs font-medium font-hanken text-gray-700">
@@ -165,7 +169,7 @@ export function RecentCoursesSection() {
             </div>
 
             {/* Course Content */}
-            <div className="p-4">
+            <div className="p-3">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs text-gray-500 font-hanken">
                   {course.department || course.category}
@@ -176,8 +180,7 @@ export function RecentCoursesSection() {
                       className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
+                      stroke="currentColor">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -192,8 +195,7 @@ export function RecentCoursesSection() {
                       className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
+                      stroke="currentColor">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -206,7 +208,7 @@ export function RecentCoursesSection() {
                 </div>
               </div>
 
-              <h3 className="font-semibold text-gray-900 font-hanken mb-2 line-clamp-2">
+              <h3 className="font-semibold text-gray-900 font-hanken mb-2 line-clamp-2 text-base">
                 {course.title}
               </h3>
 
@@ -214,9 +216,9 @@ export function RecentCoursesSection() {
               <div className="flex items-center gap-2 mb-3">
                 {!course.uploader ? (
                   <>
-                    <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+                    <div className="w-7 h-7 rounded-full bg-gray-200 animate-pulse" />
                     <div className="flex-1 min-w-0">
-                      <div className="w-24 h-3 rounded bg-gray-200 animate-pulse" />
+                      <div className="w-20 h-3 rounded bg-gray-200 animate-pulse" />
                     </div>
                   </>
                 ) : (
@@ -231,12 +233,12 @@ export function RecentCoursesSection() {
                           course.uploader.email ??
                           ""
                         }
-                        className="rounded-full w-8 h-8 object-cover"
+                        className="rounded-full w-7 h-7 object-cover"
                         loading="eager"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center text-xs font-semibold">
+                      <div className="w-7 h-7 rounded-full bg-[#FFB0E8] text-white flex items-center justify-center text-xs font-semibold">
                         {(
                           course.uploader.display_name ??
                           course.uploader.full_name ??
@@ -258,8 +260,6 @@ export function RecentCoursesSection() {
                   </>
                 )}
               </div>
-
-          
             </div>
           </div>
         ))}

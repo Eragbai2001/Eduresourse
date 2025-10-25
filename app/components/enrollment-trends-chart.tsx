@@ -95,8 +95,8 @@ export function EnrollmentTrendsChart() {
 
   return (
     <Card className="bg-white border-none shadow-none rounded-2xl h-fit max-h-[340px] min-h-[220px]">
-      <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-6">
-        <CardTitle className="text-[15px] font-semibold text-gray-800">
+      <CardHeader className="flex flex-row items-center justify-between  pt-4 px-6">
+        <CardTitle className="text-xl font-semibold text-gray-800">
           Enrollment Trends
         </CardTitle>
         <button className="text-xs text-gray-500 hover:text-gray-700">
@@ -104,8 +104,8 @@ export function EnrollmentTrendsChart() {
         </button>
       </CardHeader>
 
-      <CardContent className=" pb-6 px-3 sm:px-6">
-        <div className="h-[320px] sm:h-[270px] bg-white rounded-b-2xl">
+      <CardContent className=" pb-6 ">
+        <div className="h-[320px] sm:h-[300px] bg-white rounded-b-2xl">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={enrollmentData}
