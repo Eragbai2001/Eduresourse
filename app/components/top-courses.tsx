@@ -32,7 +32,15 @@ const courseData = [
   },
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
+type TooltipPayload = { payload: { name: string }; value: number };
+
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: TooltipPayload[];
+}) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 text-xs">
@@ -71,7 +79,8 @@ const CustomLegend = () => {
 
 export function TopCourses() {
   return (
-    <Card className="bg-white border-none shadow-none rounded-2xl h-fit max-h-[340px] min-h-[220px]">
+    // Increase max height on mobile so the legend can fit; keep original max on md+
+    <Card className="bg-white border-none shadow-none rounded-2xl h-fit max-h-[520px] md:max-h-[340px] min-h-[220px]">
       <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-6">
         <CardTitle className="text-[15px] font-semibold text-gray-800">
           Top Courses
@@ -82,7 +91,7 @@ export function TopCourses() {
       </CardHeader>
 
       <CardContent className="pt-2 pb-6 px-3 sm:px-6">
-        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
           {/* Donut chart */}
           <div className="w-full md:w-1/2 flex justify-center">
             <div className="w-[220px] h-[220px] sm:w-[260px] sm:h-[260px]">

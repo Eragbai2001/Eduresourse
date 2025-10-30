@@ -99,7 +99,7 @@ export function RecentCoursesSection() {
 
   if (loading) {
     return (
-      <div className="mt-12 bg-white p-4 rounded-2xl">
+      <div className=" bg-white p-4 rounded-2xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900 font-hanken">
             New Courses

@@ -37,6 +37,7 @@ export function EnrollmentTrendsChart() {
     month === "Apr" ? "#CDDEFF" : "#FFD6F3";
 
   // ✅ Custom label above bars
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomLabel = (props: any) => {
     const { x, y, width, value, payload } = props;
     if (!payload) return null;
@@ -75,6 +76,7 @@ export function EnrollmentTrendsChart() {
   };
 
   // ✅ Rounded bar
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderRoundedBar = (props: any) => {
     const { x, y, width, height, fill } = props;
     if (height <= 0) return <g />;

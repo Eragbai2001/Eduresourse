@@ -12,18 +12,17 @@ import { RecentActivities } from "../components/recent-activities";
 import LearningActivityHeatmap from "../components/LearningActivity";
 import ActivityHeatmap from "../components/ActivityHeatmap";
 
-const xLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const yLabels = ["9am","10am","11am","12pm","1pm","2pm","3pm"];
+const xLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const yLabels = ["9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm"];
 const values = [
-  [0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0],
-  [0,50,100,150,150,100,0],
-  [0,100,150,200,150,100,0],
-  [0,100,150,150,100,50,0],
-  [0,0,50,100,100,0,0],
-  [0,0,0,0,0,0,0],
+  [0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0],
+  [0, 50, 100, 150, 150, 100, 0],
+  [0, 100, 150, 200, 150, 100, 0],
+  [0, 100, 150, 150, 100, 50, 0],
+  [0, 0, 50, 100, 100, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0],
 ];
-
 
 export default function Dashboard() {
   return (
@@ -35,10 +34,10 @@ export default function Dashboard() {
           <StatCardsGrid />
 
           {/* Calendar & Schedule Grid - Only visible below 1700px */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 2xl:hidden">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6 2xl:hidden">
             <Calendar />
-            <Schedule />
-            <div className="md:col-span-2 xl:col-span-1">
+
+            <div className="">
               <RecentActivities />
             </div>
           </div>
@@ -50,16 +49,27 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Courses Section */}
-            <div className="mt-12 grid grid-cols-3 gap-6">
-            <ActivityHeatmap data={values} xLabels={xLabels} yLabels={yLabels} />
-            <div className="col-span-2">
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div className=" hidden xl:grid xl:col-span-1">
+              <ActivityHeatmap
+                data={values}
+                xLabels={xLabels}
+                yLabels={yLabels}
+              />
+            </div>
+            <div className="  col-span-3 xl:col-span-2">
               <RecentCoursesSection />
             </div>
-            </div>
+          </div>
+          <div className=" grid xl:hidden mt-12">
+            <ActivityHeatmap
+              data={values}
+              xLabels={xLabels}
+              yLabels={yLabels}
+            />
+          </div>
         </div>
       </div>
-
-   
     </main>
   );
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { BookOpen, CheckCircle, MessageSquare, Star, User } from "lucide-react"
+import Image from "next/image"
 
 export interface Activity {
   id: string
@@ -41,31 +42,26 @@ export function RecentActivities({ activities }: RecentActivitiesProps) {
       date: "March 1, 2025",
       time: "11:45 AM",
     },
-    {
-      id: "4",
-      type: "completed",
-      title: "Course Completed",
-      description: "Clara Bautista completed 'Business Analytics with Excel' and received a certificate.",
-      date: "March 1, 2025",
-      time: "9:30 AM",
-    },
+ 
   ]
 
   const displayActivities = activities || defaultActivities
 
+  // Add `import Image from "next/image"` to the top of the file
   const getIcon = (type: Activity["type"]) => {
-    const iconProps = "w-4 h-4"
+    const size = { width: 35, height: 35 } // adjust as needed
+    // Place Icon.png and Icon (1).png in the /public folder (e.g. public/Icon.png)
     switch (type) {
       case "course":
-        return <BookOpen className={`${iconProps} text-blue-500`} />
+        return <Image src="/Icon.png" alt="course icon" {...size} />
       case "enrollment":
-        return <User className={`${iconProps} text-pink-500`} />
+        return <Image src="/Icon (1).png" alt="enrollment icon" {...size} />
       case "feedback":
-        return <Star className={`${iconProps} text-yellow-500`} />
+        return <Image src="/Icon.png" alt="feedback icon" {...size} />
       case "completed":
-        return <CheckCircle className={`${iconProps} text-green-500`} />
+        return <Image src="/Icon (1).png" alt="completed icon" {...size} />
       case "profile":
-        return <MessageSquare className={`${iconProps} text-purple-500`} />
+        return <Image src="/Icon.png" alt="profile icon" {...size} />
       default:
         return null
     }

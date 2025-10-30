@@ -91,9 +91,12 @@ export default function DashboardLayout({
               pageColor={pageColor}
             />
 
-            <div className="hidden 2xl:block fixed top-0 right-0 h-screen w-[400px] ">
-              <DashboardSidebar />
-            </div>
+            {/* Show the dashboard-only sidebar only on the main dashboard page */}
+            {pathname === "/dashboard" ? (
+              <div className="hidden 2xl:block fixed top-0 right-0 h-screen w-[400px] ">
+                <DashboardSidebar />
+              </div>
+            ) : null}
           </div>
 
           {/* Small screen header (visible only on mobile) */}
