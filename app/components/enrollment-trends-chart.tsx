@@ -67,8 +67,7 @@ export function EnrollmentTrendsChart() {
           textAnchor="middle"
           fontSize={10}
           fill="#444"
-          fontWeight="600"
-        >
+          fontWeight="600">
           {value}
         </text>
       </Layer>
@@ -137,8 +136,7 @@ export function EnrollmentTrendsChart() {
                 dataKey="enrollments"
                 shape={renderRoundedBar}
                 maxBarSize={50}
-                isAnimationActive={false}
-              >
+                isAnimationActive={false}>
                 {/* 👇 This forces the labels to appear above all other layers */}
                 <LabelList
                   dataKey="change"
