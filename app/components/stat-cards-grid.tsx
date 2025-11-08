@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 // Icons as SVG components
 const StudentIcon = () => (
   <Image
-    src="/vector.png"
+    src="/Vector.png"
     alt="Student icon"
     width={30}
     height={30}
@@ -18,7 +18,7 @@ const StudentIcon = () => (
 
 const CourseIcon = () => (
   <Image
-    src="/vector2.png"
+    src="/Vector2.png"
     alt="Course icon"
     width={30}
     height={30}
@@ -28,7 +28,7 @@ const CourseIcon = () => (
 
 const EnrollmentIcon = () => (
   <Image
-    src="/vector3.png"
+    src="/Vector3.png"
     alt="Enrollment icon"
     width={30}
     height={30}
