@@ -28,7 +28,9 @@ async function sendRatingEmail(
     SMTP_HOST: process.env.SMTP_HOST ? "✅ Set" : "❌ Missing",
     SMTP_USER: process.env.SMTP_USER ? "✅ Set" : "❌ Missing",
     SMTP_PASS: process.env.SMTP_PASS ? "✅ Set" : "❌ Missing",
-    RATING_TOKEN_SECRET: process.env.RATING_TOKEN_SECRET ? "✅ Set" : "❌ Missing",
+    RATING_TOKEN_SECRET: process.env.RATING_TOKEN_SECRET
+      ? "✅ Set"
+      : "❌ Missing",
   });
 
   const from = process.env.FROM_EMAIL;
@@ -214,7 +216,9 @@ export async function POST(req: NextRequest) {
     const sendRatingEmailFlag = body && body.sendRatingEmail === true;
     if (userId && sendRatingEmailFlag) {
       // Check if this is the first download for this user/resource combination
-      const existingDownload = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
+      const existingDownload = await prisma.$queryRawUnsafe<
+        Array<{ count: bigint }>
+      >(
         `SELECT COUNT(*) as count
          FROM public.download_reminders
          WHERE user_id = '${userId}' AND resource_id = '${id}'`
