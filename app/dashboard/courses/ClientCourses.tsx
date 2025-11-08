@@ -95,6 +95,17 @@ export default function CoursesPage() {
     count: number;
   }>({ average: null, count: 0 });
 
+  // Function to refresh rating data
+  const refreshRating = async (courseId: string) => {
+    try {
+      const response = await fetch(`/api/ratings/${courseId}`);
+      const data = await response.json();
+      setRating({ average: data.average ?? null, count: data.count ?? 0 });
+    } catch (error) {
+      console.error("Error refreshing rating:", error);
+    }
+  };
+
   const now = new Date();
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(now.getFullYear() - 1);
@@ -121,6 +132,33 @@ export default function CoursesPage() {
 
     fetchBookmarks();
   }, []);
+
+  // Refresh ratings when page becomes visible (e.g., user returns from rating page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && selectedCourse?.id) {
+        console.log("[Rating] Page visible, refreshing rating data");
+        refreshRating(selectedCourse.id);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [selectedCourse?.id]);
+
+  // Periodically refresh ratings every 30 seconds for live updates
+  useEffect(() => {
+    if (!selectedCourse?.id) return;
+
+    const interval = setInterval(() => {
+      console.log("[Rating] Auto-refreshing rating data");
+      refreshRating(selectedCourse.id);
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [selectedCourse?.id]);
 
   const departments = React.useMemo(
     () => [

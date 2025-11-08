@@ -22,9 +22,18 @@ async function sendRatingEmail(
   resourceId: string,
   userId: string
 ) {
+  console.log("📨 sendRatingEmail called for:", to);
+  console.log("📋 Environment check:", {
+    FROM_EMAIL: process.env.FROM_EMAIL ? "✅ Set" : "❌ Missing",
+    SMTP_HOST: process.env.SMTP_HOST ? "✅ Set" : "❌ Missing",
+    SMTP_USER: process.env.SMTP_USER ? "✅ Set" : "❌ Missing",
+    SMTP_PASS: process.env.SMTP_PASS ? "✅ Set" : "❌ Missing",
+    RATING_TOKEN_SECRET: process.env.RATING_TOKEN_SECRET ? "✅ Set" : "❌ Missing",
+  });
+
   const from = process.env.FROM_EMAIL;
   if (!from) {
-    console.warn("FROM_EMAIL not configured; skipping rating email to", to);
+    console.warn("❌ FROM_EMAIL not configured; skipping rating email to", to);
     return false;
   }
 
@@ -36,10 +45,18 @@ async function sendRatingEmail(
   // Try SMTP first (Nodemailer)
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
+      console.log("🔧 Attempting SMTP email send to:", to);
+      console.log("📧 SMTP Config:", {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER,
+        from: from,
+      });
+
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
-        secure: (process.env.SMTP_SECURE || "").toLowerCase() === "true",
+        port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
+        secure: false, // Use TLS for port 587
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS,
@@ -77,7 +94,8 @@ async function sendRatingEmail(
       console.log("✅ Rating email sent via SMTP to:", to);
       return true;
     } catch (err) {
-      console.error("SMTP send failed:", err);
+      console.error("❌ SMTP send failed:", err);
+      console.error("Full error details:", JSON.stringify(err, null, 2));
     }
   }
 
@@ -230,6 +248,14 @@ export async function POST(req: NextRequest) {
             const userName =
               profile[0].full_name || profile[0].display_name || "there";
 
+            console.log("🚀 About to send rating email:", {
+              to: profile[0].email,
+              userName,
+              courseTitle: resource.title,
+              resourceId: id,
+              userId,
+            });
+
             // Send email in background (don't wait)
             sendRatingEmail(
               profile[0].email,
@@ -238,7 +264,7 @@ export async function POST(req: NextRequest) {
               id,
               userId
             ).catch((err) =>
-              console.error("Failed to send rating email:", err)
+              console.error("❌ Failed to send rating email:", err)
             );
 
             // Track that we sent the email
