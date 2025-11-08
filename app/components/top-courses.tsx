@@ -54,21 +54,27 @@ const CustomTooltip = ({
 
 const CustomLegend = () => {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6 lg:gap-8">
       {courseData.map((course, index) => (
         <div key={index} className="flex items-start gap-3">
           <div
-            className="w-4 h-10 rounded-full mt-1 flex-shrink-0"
+            className="w-4 h-8 lg:h-10 rounded-full mt-1 flex-shrink-0"
             style={{ backgroundColor: course.color }}
           />
-          <div className="flex flex-col leading-snug">
-            <p className="font-medium text-gray-900 text-[14px]">
+          <div className="flex flex-col leading-snug min-w-0 flex-1">
+            <p className="font-medium text-gray-900 text-[13px] lg:text-[14px] mb-1">
               {course.name}
             </p>
-            <div className="flex gap-3 text-[13px] text-gray-600 mt-1">
-              <span className="font-semibold">{course.value}%</span>
-              <span>{course.lessons} Lessons</span>
-              <span>{course.students.toLocaleString()} Students</span>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] lg:text-[13px] text-gray-600">
+              <span className="font-semibold whitespace-nowrap">
+                {course.value}%
+              </span>
+              <span className="whitespace-nowrap">
+                {course.lessons} Lessons
+              </span>
+              <span className="whitespace-nowrap">
+                {course.students.toLocaleString()} Students
+              </span>
             </div>
           </div>
         </div>
@@ -79,8 +85,8 @@ const CustomLegend = () => {
 
 export function TopCourses() {
   return (
-    // Increase max height on mobile so the legend can fit; keep original max on md+
-    <Card className="bg-white border-none shadow-none rounded-2xl h-fit max-h-[520px] md:max-h-[340px] min-h-[220px]">
+    // Keep taller height until lg breakpoint, then match enrollment chart height
+    <Card className="bg-white border-none shadow-none rounded-2xl h-fit max-h-[520px] lg:h-[340px] min-h-[220px]">
       <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-6">
         <CardTitle className="text-[15px] font-semibold text-gray-800">
           Top Courses
@@ -90,11 +96,11 @@ export function TopCourses() {
         </button>
       </CardHeader>
 
-      <CardContent className="pt-2 pb-6 px-3 sm:px-6">
-        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+      <CardContent className="pt-2 pb-6 px-3 sm:px-6 ">
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-6">
           {/* Donut chart */}
-          <div className="w-full md:w-1/2 flex justify-center">
-            <div className="w-[220px] h-[220px] sm:w-[260px] sm:h-[260px]">
+          <div className="w-full lg:w-[45%] flex justify-center flex-shrink-0">
+            <div className="w-[220px] h-[220px] sm:w-[240px] sm:h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -121,7 +127,7 @@ export function TopCourses() {
           </div>
 
           {/* Legend */}
-          <div className="w-full md:w-1/2">
+          <div className="w-full lg:flex-1">
             <CustomLegend />
           </div>
         </div>

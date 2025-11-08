@@ -144,11 +144,13 @@ export default function LoginPage() {
       // We don't need to generate an avatar URL anymore
       // Our Header component will display initials with the brand color background
 
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${baseUrl}/auth/callback`,
           data: {
             full_name: fullName,
           },

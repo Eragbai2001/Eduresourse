@@ -11,12 +11,8 @@ export async function GET() {
     // Get total courses/resources
     const totalCourses = await prisma.resource.count();
 
-    // Get total enrollments (downloads)
-    const totalEnrollments = await prisma.resource.aggregate({
-      _sum: {
-        downloadCount: true,
-      },
-    });
+    // Get total enrollments (same as total students - number of users on platform)
+    const totalEnrollments = totalStudents;
 
     // Get total views
     const totalViews = await prisma.resource.aggregate({
@@ -180,7 +176,7 @@ export async function GET() {
         overview: {
           totalStudents,
           totalCourses,
-          totalEnrollments: totalEnrollments._sum.downloadCount || 0,
+          totalEnrollments,
           totalViews: totalViews._sum.viewCount || 0,
         },
         enrollmentTrends: monthlyEnrollments,
