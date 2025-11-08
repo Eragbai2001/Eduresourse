@@ -28,7 +28,7 @@ export default function AuthButtons({
         throw new Error("Please enter both email and password");
       }
 
-      const {  error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -51,7 +51,7 @@ export default function AuthButtons({
       setIsLoading(true);
       setError(null);
 
-      const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
+      const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
         ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
         : `${window.location.origin}/auth/callback`;
 
@@ -78,7 +78,7 @@ export default function AuthButtons({
       setIsLoading(true);
       setError(null);
 
-      const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
+      const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
         ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
         : `${window.location.origin}/auth/callback`;
 

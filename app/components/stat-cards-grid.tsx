@@ -58,7 +58,7 @@ export function StatCardsGrid({ stats }: StatCardsGridProps) {
       try {
         const response = await fetch("/api/dashboard/stats");
         const data = await response.json();
-        
+
         if (data.success && data.data?.overview) {
           setDashboardStats({
             totalStudents: data.data.overview.totalStudents,
@@ -92,7 +92,9 @@ export function StatCardsGrid({ stats }: StatCardsGridProps) {
     {
       icon: <EnrollmentIcon />,
       label: "Total Enrollments",
-      value: isLoading ? "..." : dashboardStats.totalEnrollments.toLocaleString(),
+      value: isLoading
+        ? "..."
+        : dashboardStats.totalEnrollments.toLocaleString(),
       backgroundColor: "#FFD365",
     },
   ];

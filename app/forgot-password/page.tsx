@@ -22,7 +22,8 @@ export default function ForgotPasswordPage() {
         throw new Error("Email is required");
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${baseUrl}/reset-password`,
