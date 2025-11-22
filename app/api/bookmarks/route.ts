@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma";
+// NOTE: prisma is imported lazily inside handlers to avoid build-time issues
 
 // GET /api/bookmarks - Get all bookmarks for the current user
 export async function GET() {
@@ -27,7 +27,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Lazy-import Prisma (prevents client construction at build-time)
+    const { default: prisma } = await import("@/lib/prisma");
+
     // Get all bookmarks for this user
+    // eslint-disable-next-line no-console
+    console.log('[GET /api/bookmarks] userId=', user.id);
     const bookmarks = await prisma.bookmark.findMany({
       where: {
         userId: user.id,
@@ -76,6 +81,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { resourceId } = body;
+
+    // Lazy-import Prisma (prevents client construction at build-time)
+    const { default: prisma } = await import("@/lib/prisma");
+
+    // debug log (dev only)
+    // eslint-disable-next-line no-console
+    console.log('[POST /api/bookmarks] userId=', user.id, 'resourceId=', resourceId);
 
     if (!resourceId) {
       return NextResponse.json(

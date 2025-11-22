@@ -203,10 +203,12 @@ export async function GET() {
         learningActivity: Object.values(activityByDayHour),
       },
     });
-  } catch (error: any) {
-    console.error("Error fetching dashboard stats:", error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
+    // eslint-disable-next-line no-console
+    console.error("Error fetching dashboard stats:", message, error);
     return NextResponse.json(
-      { success: false, error: error?.message || "Unknown error" },
+      { success: false, error: message },
       { status: 500 }
     );
   }
