@@ -23,7 +23,7 @@ export async function GET() {
   try {
     const sevenMonthsAgo = new Date();
     sevenMonthsAgo.setMonth(sevenMonthsAgo.getMonth() - 7);
-    
+
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -91,9 +91,12 @@ export async function GET() {
     // ... rest of your processing code stays the same
     const monthlyEnrollments = enrollmentTrends.reduce(
       (acc: Record<string, number>, item) => {
-        const month = new Date(item.firstDownloadedAt).toLocaleString("default", {
-          month: "short",
-        });
+        const month = new Date(item.firstDownloadedAt).toLocaleString(
+          "default",
+          {
+            month: "short",
+          }
+        );
         if (!acc[month]) acc[month] = 0;
         acc[month] += item._count.id;
         return acc;
@@ -172,7 +175,10 @@ export async function GET() {
     );
 
     const activityByDayHour = learningActivity.reduce(
-      (acc: Record<string, { day: string; hour: number; count: number }>, item) => {
+      (
+        acc: Record<string, { day: string; hour: number; count: number }>,
+        item
+      ) => {
         const date = new Date(item.firstDownloadedAt);
         const day = date.toLocaleString("default", { weekday: "short" });
         const hour = date.getHours();
@@ -204,7 +210,8 @@ export async function GET() {
       },
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
+    const message =
+      error instanceof Error ? error.message : String(error ?? "Unknown error");
     // eslint-disable-next-line no-console
     console.error("Error fetching dashboard stats:", message, error);
     return NextResponse.json(

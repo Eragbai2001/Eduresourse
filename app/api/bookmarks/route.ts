@@ -32,7 +32,7 @@ export async function GET() {
 
     // Get all bookmarks for this user
     // eslint-disable-next-line no-console
-    console.log('[GET /api/bookmarks] userId=', user.id);
+    console.log("[GET /api/bookmarks] userId=", user.id);
     const bookmarks = await prisma.bookmark.findMany({
       where: {
         userId: user.id,
@@ -87,7 +87,12 @@ export async function POST(request: NextRequest) {
 
     // debug log (dev only)
     // eslint-disable-next-line no-console
-    console.log('[POST /api/bookmarks] userId=', user.id, 'resourceId=', resourceId);
+    console.log(
+      "[POST /api/bookmarks] userId=",
+      user.id,
+      "resourceId=",
+      resourceId
+    );
 
     if (!resourceId) {
       return NextResponse.json(
