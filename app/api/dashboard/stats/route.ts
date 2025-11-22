@@ -21,7 +21,7 @@ function getTimeAgo(date: Date): string {
 
 export async function GET() {
   try {
-    const shouldLogTimings = process.env.NODE_ENV !== 'production';
+    const shouldLogTimings = process.env.NODE_ENV !== "production";
     const logTiming = (label: string, start: number) => {
       if (!shouldLogTimings) return;
       try {
@@ -118,7 +118,7 @@ export async function GET() {
         cacheStrategy: { ttl: 300, swr: 600 },
       }),
     ]);
-    logTiming('dashboard: initial parallel queries', queriesStart);
+    logTiming("dashboard: initial parallel queries", queriesStart);
 
     // Process enrollment trends
     const monthlyEnrollments = (
@@ -167,7 +167,10 @@ export async function GET() {
         };
       })
     );
-    logTiming('dashboard: resolve top courses (per-resource lookups)', topCoursesStart);
+    logTiming(
+      "dashboard: resolve top courses (per-resource lookups)",
+      topCoursesStart
+    );
 
     const topCourses = topCoursesResolved.filter(
       (c): c is NonNullable<typeof c> => c !== null
@@ -210,7 +213,10 @@ export async function GET() {
         };
       })
     );
-    logTiming('dashboard: enrich recent ratings (profile+resource lookups)', ratingsStart);
+    logTiming(
+      "dashboard: enrich recent ratings (profile+resource lookups)",
+      ratingsStart
+    );
 
     // Process learning activity
     const activityByDayHour = (
