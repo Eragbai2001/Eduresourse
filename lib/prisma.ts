@@ -20,7 +20,7 @@ const createPrismaClient = () => {
 
   // Only enable the Accelerate extension when an accelerate URL is configured.
   return accelerateUrl ? client.$extends(withAccelerate()) : client;
-}
+};
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: ReturnType<typeof createPrismaClient>;
