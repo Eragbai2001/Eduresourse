@@ -4,7 +4,7 @@ import { Bell, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import SearchBar from "./SearchBar";
-import { DashboardSidebar } from "./dashboard-sidebar";
+
 
 interface HeaderProps {
   title: string;

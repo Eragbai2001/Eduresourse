@@ -8,9 +8,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Cell,
-  LabelList,
   Tooltip,
-  Layer,
 } from "recharts";
 import {
   Card,
@@ -18,79 +16,89 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
+import { ArrowUpRight, ArrowDownLeft } from "lucide-react";
 
 const enrollmentData = [
   { month: "Jan", enrollments: 450, change: "+1.1%" },
   { month: "Feb", enrollments: 520, change: "+0.6%" },
   { month: "Mar", enrollments: 680, change: "+1.3%" },
   { month: "Apr", enrollments: 850, change: "+7.3%" },
-  { month: "May", enrollments: 620, change: "+2.2%" },
-  { month: "Jun", enrollments: 680, change: "+0.6%" },
-  { month: "Jul", enrollments: 720, change: "+1.8%" },
+  { month: "May", enrollments: 620, change: "-1.3%" },
+  { month: "Jun", enrollments: 680, change: "-2.2%" },
+  { month: "Jul", enrollments: 720, change: "+0.8%" },
 ];
 
 export function EnrollmentTrendsChart() {
   const getBarColor = (month: string) =>
     month === "Apr" ? "#FFD365" : "#FFB0E8";
 
-  const getBadgeColor = (month: string) =>
-    month === "Apr" ? "#CDDEFF" : "#FFD6F3";
-
-  // ✅ Custom label above bars
+  // ✅ Rounded bar with label on top
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomLabel = (props: any) => {
-    const { x, y, width, value, payload } = props;
-    if (!payload) return null;
+  const renderRoundedBarWithLabel = (props: any) => {
+    const { x, y, width, height, fill, payload } = props;
+    if (height <= 0) return <g />;
 
-    const badgeWidth = 38;
-    const badgeHeight = 18;
-    const badgeColor = getBadgeColor(payload.month);
+    const radius = 10;
+    
+    // Check if decrease (starts with minus)
+    const isDecrease = payload.change.includes("-");
+    
+    // Badge settings
+    const badgeWidth = 52;
+    const badgeHeight = 22;
+    const badgeColor = isDecrease ? "#FFD6F3" : "#CDDEFF";
 
-    // make sure it’s well above the bar
     const badgeX = x + width / 2 - badgeWidth / 2;
     const badgeY = y - badgeHeight - 8;
+    
+    // Icon to use based on increase/decrease
+    const Icon = isDecrease ? ArrowDownLeft : ArrowUpRight;
 
     return (
-      <Layer>
+      <g>
+        {/* The bar itself */}
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          rx={radius}
+          ry={radius}
+          fill={fill}
+        />
+        
+        {/* Badge background */}
         <rect
           x={badgeX}
           y={badgeY}
           width={badgeWidth}
           height={badgeHeight}
-          rx={8}
-          ry={8}
+          rx={11}
+          ry={11}
           fill={badgeColor}
         />
+        
+        {/* Lucide icon using foreignObject */}
+        <foreignObject
+          x={badgeX + 5}
+          y={badgeY + 5}
+          width={12}
+          height={12}
+        >
+          <Icon size={12} color="#2E3135" strokeWidth={1.5} />
+        </foreignObject>
+        
+        {/* Percentage text - remove + or - sign, add spacing */}
         <text
-          x={x + width / 2}
-          y={badgeY + 12}
-          textAnchor="middle"
-          fontSize={10}
-          fill="#444"
-          fontWeight="600">
-          {value}
+          x={badgeX + 21}
+          y={badgeY + badgeHeight / 2 + 4}
+          textAnchor="start"
+          fontSize={11}
+          fill="#2E3135"
+          fontWeight="500">
+          {payload.change.replace(/[+-]/g, '')}
         </text>
-      </Layer>
-    );
-  };
-
-  // ✅ Rounded bar
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderRoundedBar = (props: any) => {
-    const { x, y, width, height, fill } = props;
-    if (height <= 0) return <g />;
-
-    const radius = 10; // control roundness (4–12)
-    return (
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        rx={radius}
-        ry={radius}
-        fill={fill}
-      />
+      </g>
     );
   };
 
@@ -106,16 +114,16 @@ export function EnrollmentTrendsChart() {
       </CardHeader>
 
       <CardContent className=" pb-6 ">
-        <div className="h-[320px] sm:h-[300px] bg-white rounded-b-2xl">
+        <div className="h-[320px] sm:h-[300px] bg-white rounded-b-2xl" style={{ overflow: 'visible' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={enrollmentData}
-              margin={{ top: 60, right: 20, left: 0, bottom: 10 }} // extra top space
+              margin={{ top: 40, right: 20, left: 0, bottom: 10 }}
             >
               <CartesianGrid
-                strokeDasharray="3 3"
                 vertical={false}
                 stroke="#CFCFCF"
+                strokeWidth={0.5}
               />
               <XAxis
                 dataKey="month"
@@ -131,18 +139,11 @@ export function EnrollmentTrendsChart() {
                 ticks={[0, 250, 500, 750, 1000]}
               />
               <Tooltip cursor={false} />
-
               <Bar
                 dataKey="enrollments"
-                shape={renderRoundedBar}
+                shape={renderRoundedBarWithLabel}
                 maxBarSize={50}
                 isAnimationActive={false}>
-                {/* 👇 This forces the labels to appear above all other layers */}
-                <LabelList
-                  dataKey="change"
-                  content={<CustomLabel />}
-                  position="top"
-                />
                 {enrollmentData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={getBarColor(entry.month)} />
                 ))}

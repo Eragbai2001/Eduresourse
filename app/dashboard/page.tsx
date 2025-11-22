@@ -1,13 +1,13 @@
 "use client";
 import { EnrollmentTrendsChart } from "../components/enrollment-trends-chart";
-import { RevenueChart } from "../components/revenue-charts";
+
 import { StatCardsGrid } from "../components/stat-cards-grid";
 import { RecentCoursesSection } from "../components/RecentCoursesSection";
-import LearningActivity from "../components/LearningActivity";
+
 import { TopCourses } from "../components/top-courses";
 import { DashboardSidebar } from "../components/dashboard-sidebar";
 import { Calendar } from "../components/calendar";
-import { Schedule } from "../components/schedule";
+
 import { RecentActivities } from "../components/recent-activities";
 import LearningActivityHeatmap from "../components/LearningActivity";
 import ActivityHeatmap from "../components/ActivityHeatmap";

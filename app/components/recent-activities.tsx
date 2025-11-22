@@ -1,6 +1,5 @@
 "use client"
 
-import { BookOpen, CheckCircle, MessageSquare, Star, User } from "lucide-react"
 import Image from "next/image"
 
 export interface Activity {
