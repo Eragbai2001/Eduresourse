@@ -17,18 +17,35 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 import { ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
-const enrollmentData = [
-  { month: "Jan", enrollments: 450, change: "+1.1%" },
-  { month: "Feb", enrollments: 520, change: "+0.6%" },
-  { month: "Mar", enrollments: 680, change: "+1.3%" },
-  { month: "Apr", enrollments: 850, change: "+7.3%" },
-  { month: "May", enrollments: 620, change: "-1.3%" },
-  { month: "Jun", enrollments: 680, change: "-2.2%" },
-  { month: "Jul", enrollments: 720, change: "+0.8%" },
-];
+type EnrollmentData = {
+  month: string;
+  enrollments: number;
+  change: string;
+};
 
 export function EnrollmentTrendsChart() {
+  const [enrollmentData, setEnrollmentData] = useState<EnrollmentData[]>([]);
+  
+  useEffect(() => {
+    fetch("/api/enrollment-trends")
+      .then((res) => res.json())
+      .then((apiData) => {
+        const formattedData = apiData.data.map(
+          (item: { month: string; count: number; change: string }) => ({
+            month: new Date(item.month + "-01").toLocaleString("en-US", {
+              month: "short",
+            }),
+            enrollments: item.count,
+            change: item.change,
+          })
+        );
+        setEnrollmentData(formattedData);
+      })
+      .catch(() => setEnrollmentData([]));
+  }, []);
+
   const getBarColor = (month: string) =>
     month === "Apr" ? "#FFD365" : "#FFB0E8";
 
@@ -39,10 +56,10 @@ export function EnrollmentTrendsChart() {
     if (height <= 0) return <g />;
 
     const radius = 10;
-    
+
     // Check if decrease (starts with minus)
     const isDecrease = payload.change.includes("-");
-    
+
     // Badge settings
     const badgeWidth = 52;
     const badgeHeight = 22;
@@ -50,7 +67,7 @@ export function EnrollmentTrendsChart() {
 
     const badgeX = x + width / 2 - badgeWidth / 2;
     const badgeY = y - badgeHeight - 8;
-    
+
     // Icon to use based on increase/decrease
     const Icon = isDecrease ? ArrowDownLeft : ArrowUpRight;
 
@@ -66,7 +83,7 @@ export function EnrollmentTrendsChart() {
           ry={radius}
           fill={fill}
         />
-        
+
         {/* Badge background */}
         <rect
           x={badgeX}
@@ -77,17 +94,12 @@ export function EnrollmentTrendsChart() {
           ry={11}
           fill={badgeColor}
         />
-        
+
         {/* Lucide icon using foreignObject */}
-        <foreignObject
-          x={badgeX + 5}
-          y={badgeY + 5}
-          width={12}
-          height={12}
-        >
+        <foreignObject x={badgeX + 5} y={badgeY + 5} width={12} height={12}>
           <Icon size={12} color="#2E3135" strokeWidth={1.5} />
         </foreignObject>
-        
+
         {/* Percentage text - remove + or - sign, add spacing */}
         <text
           x={badgeX + 21}
@@ -96,7 +108,7 @@ export function EnrollmentTrendsChart() {
           fontSize={11}
           fill="#2E3135"
           fontWeight="500">
-          {payload.change.replace(/[+-]/g, '')}
+          {payload.change.replace(/[+-]/g, "")}
         </text>
       </g>
     );
@@ -114,12 +126,13 @@ export function EnrollmentTrendsChart() {
       </CardHeader>
 
       <CardContent className=" pb-6 ">
-        <div className="h-[320px] sm:h-[300px] bg-white rounded-b-2xl" style={{ overflow: 'visible' }}>
+        <div
+          className="h-[320px] sm:h-[300px] bg-white rounded-b-2xl"
+          style={{ overflow: "visible" }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={enrollmentData}
-              margin={{ top: 40, right: 20, left: 0, bottom: 10 }}
-            >
+              margin={{ top: 40, right: 20, left: 0, bottom: 10 }}>
               <CartesianGrid
                 vertical={false}
                 stroke="#CFCFCF"

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 
 interface DropdownProps {
@@ -19,11 +20,16 @@ export default function CustomDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(defaultOption);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement | null>(null);
+  const [menuStyles, setMenuStyles] = useState<React.CSSProperties | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const clickedInsideTrigger = dropdownRef.current && dropdownRef.current.contains(event.target as Node);
+      const clickedInsideMenu = menuContainerRef.current && menuContainerRef.current.contains(event.target as Node);
+
+      if (!clickedInsideTrigger && !clickedInsideMenu) {
         setIsOpen(false);
       }
     }
@@ -31,6 +37,28 @@ export default function CustomDropdown({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Position the menu in a portal to avoid being clipped by overflow parents
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuStyles(null);
+      return;
+    }
+
+    const trigger = dropdownRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const styles: React.CSSProperties = {
+      position: "absolute",
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+      zIndex: 9999,
+    };
+
+    setMenuStyles(styles);
+  }, [isOpen]);
 
   const handleOptionSelect = (option: string) => {
     setSelectedOption(option);
@@ -50,21 +78,27 @@ export default function CustomDropdown({
       </div>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg  z-10 py-1 text-[#2E3135]">
-          {options.map((option) => (
+      {isOpen && typeof document !== "undefined" && menuStyles
+        ? createPortal(
             <div
-              key={option}
-              className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${
-                selectedOption === option ? 'bg-gray-50' : ''
-              }`}
-              onClick={() => handleOptionSelect(option)}
-            >
-              {option}
-            </div>
-          ))}
-        </div>
-      )}
+              ref={(el) => (menuContainerRef.current = el)}
+              style={menuStyles}
+              className="bg-white rounded-lg shadow-lg py-1 text-[#2E3135]"
+              onClick={(e) => e.stopPropagation()}>
+              {options.map((option) => (
+                <div
+                  key={option}
+                  className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${
+                    selectedOption === option ? "bg-gray-50" : ""
+                  }`}
+                  onClick={() => handleOptionSelect(option)}>
+                  {option}
+                </div>
+              ))}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

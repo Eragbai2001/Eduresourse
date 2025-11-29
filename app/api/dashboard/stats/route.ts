@@ -27,15 +27,15 @@ export async function GET() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // ✅ All queries in parallel WITHOUT cacheStrategy
+    // ✅ OPTIMIZED: All queries in parallel with proper includes
     const [
       totalStudents,
       totalCourses,
       totalViews,
       enrollmentTrends,
-      topRatedCourses,
+      topRatedCoursesData,
       recentResources,
-      recentRatings,
+      recentRatingsData,
       learningActivity,
     ] = await Promise.all([
       prisma.profile.count(),
@@ -49,15 +49,15 @@ export async function GET() {
         where: { firstDownloadedAt: { gte: sevenMonthsAgo } },
         orderBy: { firstDownloadedAt: "asc" },
       }),
-      prisma.rating.findMany({
-        orderBy: { score: "desc" },
-        take: 3,
-        select: {
-          id: true,
-          resourceId: true,
-          score: true,
-          createdAt: true,
+      // ✅ FIXED: Fetch top courses with ratings in ONE query using aggregation
+      prisma.rating.groupBy({
+        by: ["resourceId"],
+        _avg: { score: true },
+        _count: { id: true },
+        orderBy: {
+          _avg: { score: "desc" },
         },
+        take: 3,
       }),
       prisma.resource.findMany({
         orderBy: { createdAt: "desc" },
@@ -76,9 +76,19 @@ export async function GET() {
           createdAt: true,
         },
       }),
+      // ✅ FIXED: Fetch recent ratings
       prisma.rating.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
+        select: {
+          id: true,
+          userId: true,
+          resourceId: true,
+          score: true,
+          review: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       }),
       prisma.downloadReminder.groupBy({
         by: ["firstDownloadedAt"],
@@ -88,14 +98,12 @@ export async function GET() {
       }),
     ]);
 
-    // ... rest of your processing code stays the same
+    // Process enrollment trends
     const monthlyEnrollments = enrollmentTrends.reduce(
       (acc: Record<string, number>, item) => {
         const month = new Date(item.firstDownloadedAt).toLocaleString(
           "default",
-          {
-            month: "short",
-          }
+          { month: "short" }
         );
         if (!acc[month]) acc[month] = 0;
         acc[month] += item._count.id;
@@ -104,41 +112,41 @@ export async function GET() {
       {}
     );
 
-    const topCoursesResolved = await Promise.all(
-      topRatedCourses.map(async (rating) => {
-        const resource = await prisma.resource.findUnique({
-          where: { id: rating.resourceId },
-          select: {
-            id: true,
-            title: true,
-            department: true,
-            level: true,
-            viewCount: true,
-            downloadCount: true,
-            coverPhoto: true,
-            coverColor: true,
-            resourceCount: true,
-          },
-        });
+    // ✅ OPTIMIZED: Fetch all resources at once using IN clause
+    const resourceIds = topRatedCoursesData.map((r) => r.resourceId);
+    const resources = await prisma.resource.findMany({
+      where: { id: { in: resourceIds } },
+      select: {
+        id: true,
+        title: true,
+        department: true,
+        level: true,
+        viewCount: true,
+        downloadCount: true,
+        coverPhoto: true,
+        coverColor: true,
+        resourceCount: true,
+      },
+    });
 
+    // Create a map for quick lookup
+    const resourceMap = new Map(resources.map((r) => [r.id, r]));
+
+    // Combine the data
+    const topCourses = topRatedCoursesData
+      .map((rating) => {
+        const resource = resourceMap.get(rating.resourceId);
         if (!resource) return null;
-
-        const ratingCount = await prisma.rating.count({
-          where: { resourceId: rating.resourceId },
-        });
 
         return {
           ...resource,
-          averageRating: rating.score,
-          ratingCount,
+          averageRating: rating._avg.score || 0,
+          ratingCount: rating._count.id,
         };
       })
-    );
+      .filter((c): c is NonNullable<typeof c> => c !== null);
 
-    const topCourses = topCoursesResolved.filter(
-      (c): c is NonNullable<typeof c> => c !== null
-    );
-
+    // Calculate percentages
     const totalWeightedScore = topCourses.reduce(
       (sum: number, course) => sum + course.averageRating * course.ratingCount,
       0
@@ -158,22 +166,45 @@ export async function GET() {
       };
     });
 
-    const ratingsWithDetails = await Promise.all(
-      recentRatings.map(async (rating) => {
-        const profile = await prisma.profile.findFirst({
-          where: { userId: rating.userId },
-        });
-        const resource = await prisma.resource.findUnique({
-          where: { id: rating.resourceId },
-        });
-        return {
-          ...rating,
-          userName: profile?.fullName || profile?.username || "Anonymous",
-          resourceTitle: resource?.title || "Unknown Resource",
-        };
-      })
-    );
+    // ✅ OPTIMIZED: Fetch related data in bulk
+    const userIds = recentRatingsData.map((r) => r.userId);
+    const ratingResourceIds = recentRatingsData.map((r) => r.resourceId);
 
+    const [profiles, ratingResources] = await Promise.all([
+      prisma.profile.findMany({
+        where: { userId: { in: userIds } },
+        select: {
+          userId: true,
+          fullName: true,
+          username: true,
+        },
+      }),
+      prisma.resource.findMany({
+        where: { id: { in: ratingResourceIds } },
+        select: {
+          id: true,
+          title: true,
+        },
+      }),
+    ]);
+
+    // Create lookup maps
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+    const ratingResourceMap = new Map(ratingResources.map((r) => [r.id, r]));
+
+    // Combine the data
+    const ratingsWithDetails = recentRatingsData.map((rating) => {
+      const profile = profileMap.get(rating.userId);
+      const resource = ratingResourceMap.get(rating.resourceId);
+      
+      return {
+        ...rating,
+        userName: profile?.fullName || profile?.username || "Anonymous",
+        resourceTitle: resource?.title || "Unknown Resource",
+      };
+    });
+
+    // Process learning activity
     const activityByDayHour = learningActivity.reduce(
       (
         acc: Record<string, { day: string; hour: number; count: number }>,
@@ -212,7 +243,6 @@ export async function GET() {
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : String(error ?? "Unknown error");
-    // eslint-disable-next-line no-console
     console.error("Error fetching dashboard stats:", message, error);
     return NextResponse.json(
       { success: false, error: message },
@@ -220,3 +250,4 @@ export async function GET() {
     );
   }
 }
+
