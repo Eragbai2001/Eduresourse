@@ -442,7 +442,7 @@ export function HorizontalAccordion({
                   className="w-full h-14 text-lg border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] focus-visible:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors shadow-none">
                   <SelectValue placeholder="Select department..." />
                 </SelectTrigger>
-                <SelectContent className="bg-white   border-2 border-gray-200">
+                <SelectContent className="bg-white   border-2 border-gray-200 max-h-[40vh] overflow-auto">
                   {departments.map((dept) => (
                     <SelectItem
                       key={dept}
@@ -474,7 +474,7 @@ export function HorizontalAccordion({
                   className="w-full h-14 text-lg border-2 border-gray-200 rounded-xl focus:border-[#FFB0E8] focus-visible:border-[#FFB0E8] focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors shadow-none">
                   <SelectValue placeholder="Select level..." />
                 </SelectTrigger>
-                <SelectContent className="bg-white   border-2 border-gray-200 ">
+                <SelectContent className="bg-white   border-2 border-gray-200 max-h-[40vh] overflow-auto">
                   {levels.map((level) => (
                     <SelectItem
                       key={level}
@@ -982,7 +982,6 @@ export function HorizontalAccordion({
                       </div>
                     )}
 
-
                     {isActive && (
                       <h3
                         className={cn(
@@ -1049,6 +1048,8 @@ export function HorizontalAccordion({
                     <div
                       className={cn(
                         "absolute left-0 right-0 bottom-0 px-4 md:px-6 pb-4 md:pb-6 transition-all duration-500 ease-in-out bg-white border-t border-gray-100 md:border-0",
+                        // ensure nav sits above scrollable content so buttons are clickable
+                        "z-40",
                         isActive
                           ? "translate-y-0 opacity-100 pointer-events-auto"
                           : "translate-y-6 opacity-0 pointer-events-none"
