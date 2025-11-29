@@ -21,19 +21,25 @@ export default function CustomDropdown({
   const [selectedOption, setSelectedOption] = useState(defaultOption);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuContainerRef = useRef<HTMLDivElement | null>(null);
-  const [menuStyles, setMenuStyles] = useState<React.CSSProperties | null>(null);
+  const [menuStyles, setMenuStyles] = useState<React.CSSProperties | null>(
+    null
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const clickedInsideTrigger = dropdownRef.current && dropdownRef.current.contains(event.target as Node);
-      const clickedInsideMenu = menuContainerRef.current && menuContainerRef.current.contains(event.target as Node);
+      const clickedInsideTrigger =
+        dropdownRef.current &&
+        dropdownRef.current.contains(event.target as Node);
+      const clickedInsideMenu =
+        menuContainerRef.current &&
+        menuContainerRef.current.contains(event.target as Node);
 
       if (!clickedInsideTrigger && !clickedInsideMenu) {
         setIsOpen(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -69,12 +75,14 @@ export default function CustomDropdown({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       {/* Dropdown Trigger */}
-      <div 
+      <div
         className="flex items-center justify-between bg-white rounded-lg py-2 px-4 text-sm w-40 cursor-pointer "
-        onClick={() => setIsOpen(!isOpen)}
-      >
+        onClick={() => setIsOpen(!isOpen)}>
         <span className="text-[#2E3135] font-[12px]">{selectedOption}</span>
-        <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
       </div>
 
       {/* Dropdown Menu */}
